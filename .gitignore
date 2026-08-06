@@ -1,0 +1,98 @@
+# Dependências
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log*
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+
+# Metro
+.metro-health-check*
+.metro-cache/
+
+# Watchman
+.watchmanconfig
+
+# Expo (remove se for bare RN)
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+*.jsbundle
+
+# --- Android ---
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/*.keystore
+!android/app/debug.keystore
+android/app/release/
+android/.idea/
+*.hprof
+.cxx/
+
+# --- iOS ---
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+!ios/*.xcworkspace/contents.xcworkspacedata
+ios/Podfile.lock
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+ios/.xcode.env.local
+
+# Variáveis de ambiente
+.env
+.env*.local
+*.env
+
+# TypeScript
+*.tsbuildinfo
+
+# Testes / cobertura
+coverage/
+
+# IDEs / editores
+.idea/
+.vscode/
+*.swp
+*.iml
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Fastlane (se usares)
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+
+# CocoaPods
+**/Pods/
+
+# Bundle artifacts
+*.bundle
