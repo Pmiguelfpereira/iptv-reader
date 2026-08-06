@@ -54,7 +54,7 @@ export default function Movies() {
     title: item.name,
     poster: item.image,
     source: xtreamClient
-      ? xtreamClient?.liveUrl(item.movieId, item.ext ?? "")
+      ? xtreamClient?.vodUrl(item.movieId, item.ext ?? "")
       : "",
   }));
 

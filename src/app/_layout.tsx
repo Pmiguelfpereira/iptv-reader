@@ -44,7 +44,7 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       {!hiddenHeader && (
         <SafeAreaView edges={["top", "left", "right"]}>
           <Container style={styles.container}>

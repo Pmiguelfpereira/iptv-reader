@@ -23,9 +23,7 @@ export default function Settings() {
   );
   const hydrated = useAccountStore((state) => state.hydrated);
   const setAccount = useAccountStore((state) => state.setAccount);
-  const xtreamClient = useAccountStore((state) => state.client);
   const [saving, setSaving] = useState(false);
-
   const canSave =
     url.trim() !== "" && username.trim() !== "" && password !== "";
 
@@ -56,6 +54,8 @@ export default function Settings() {
       if (accountData) {
         setAccount(accountData);
       }
+      const xtreamClient = useAccountStore.getState().client;
+
       if (xtreamClient) {
         const [live, vod, series] = await Promise.all([
           xtreamClient.getLiveCategories(),

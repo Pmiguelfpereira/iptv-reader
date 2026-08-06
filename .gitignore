@@ -37,7 +37,7 @@ android/app/release/
 android/.idea/
 *.hprof
 .cxx/
-
+android/app/src/iptvreader-release.keystore
 # --- iOS ---
 ios/build/
 ios/Pods/
@@ -96,3 +96,4 @@ Thumbs.db
 
 # Bundle artifacts
 *.bundle
+android/app/iptvreader-release.keystore
