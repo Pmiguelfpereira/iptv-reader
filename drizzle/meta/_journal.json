@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1785844944477,
+      "tag": "0000_closed_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785861961631,
+      "tag": "0001_bitter_infant_terrible",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785940429990,
+      "tag": "0002_great_mattie_franklin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785943963760,
+      "tag": "0003_third_human_torch",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785948387231,
+      "tag": "0004_fancy_beyonder",
+      "breakpoints": true
+    }
+  ]
+}
