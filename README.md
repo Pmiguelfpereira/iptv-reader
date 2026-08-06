@@ -1,56 +1,61 @@
-# Welcome to your Expo app 👋
+# IPTVReader
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Cliente IPTV para **Android TV** (e Android/iOS) construído com Expo SDK 57 e `react-native-tvos`.
+Liga-se a um servidor **Xtream Codes**, sincroniza o catálogo para uma base de dados **SQLite local** e delega a reprodução ao **VLC**.
 
-## Get started
+---
 
-1. Install dependencies
+## Stack
 
-   ```bash
-   npm install
-   ```
+| Área          | Tecnologia                                         |
+| ------------- | -------------------------------------------------- |
+| Runtime       | Expo SDK 57, React 19.2, `react-native-tvos`       |
+| Navegação     | `expo-router` (rotas tipadas)                      |
+| Base de dados | `expo-sqlite` + `drizzle-orm` / `drizzle-kit`      |
+| Estado        | `zustand`                                          |
+| TV            | `@react-native-tvos/config-tv`, `TVFocusGuideView` |
+| Player        | VLC via `expo-intent-launcher`                     |
+| Linguagem     | TypeScript (`strict`)                              |
 
-2. Start the app
+O React Compiler está ativo (`experiments.reactCompiler`).
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Requisitos
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 20+
+- Android Studio / SDK (para `expo run:android`)
+- Xcode (apenas para iOS)
+- **VLC instalado** no dispositivo Android — sem ele não há reprodução (`org.videolan.vlc` está declarado nas `queries` do `app.json`)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
-
-When you're ready, run:
+## Arranque
 
 ```bash
-npm run reset-project
+npm install --legacy-peer-deps
+npm run android      # build nativo + instalação (Android / Android TV)
+npm run ios          # iOS
+npm start            # Metro apenas
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+> O projeto usa módulos nativos e uma configuração TV, por isso **não corre no Expo Go** — é preciso um development build (`expo run:*`).
 
-### Other setup steps
+### Pré-preencher credenciais (opcional)
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+O ecrã de _Settings_ aceita valores por defeito de variáveis de ambiente. Cria um `.env`:
 
-## Learn more
+```bash
+EXPO_PUBLIC_XTREAM_URL=https://o-teu-servidor.tld
+EXPO_PUBLIC_XTREAM_USERNAME=utilizador
+EXPO_PUBLIC_XTREAM_PASSWORD=password
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Estas variáveis são embutidas no bundle (prefixo `EXPO_PUBLIC_`) — usa-as só em desenvolvimento.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## Notas
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Reprodução só em Android**: VLC
+- Gravar novas credenciais em _Settings_ **apaga todo o catálogo** já sincronizado.
