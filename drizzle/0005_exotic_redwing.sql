@@ -1,0 +1,1 @@
+ALTER TABLE `serie_episode` ADD `watched` integer DEFAULT false NOT NULL;

@@ -7,21 +7,24 @@ export type IconButtonProps = {
   accessibilityLabel: string;
   href?: Href;
   onPress?: () => void;
+  disabled?: boolean;
 };
 export function IconButton({
   name,
   accessibilityLabel,
   href,
   onPress,
+  disabled = false,
 }: IconButtonProps) {
   return (
     <Pressable
       onPress={onPress ?? (href ? () => router.navigate(href) : undefined)}
       hitSlop={8}
       accessibilityLabel={accessibilityLabel}
+      disabled={disabled}
     >
       {({ focused }) => (
-        <AntDesign name={name} color={focused ? "#4f9dff" : "#FFF"} size={20} />
+        <AntDesign name={name} color={focused ? "#4f9dff" : "#FFF"} size={30} />
       )}
     </Pressable>
   );

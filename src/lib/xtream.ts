@@ -6,6 +6,7 @@ import {
   XtreamSeriesInfo,
   XtreamVodStream,
 } from "@/types/xtream/types";
+import { logger } from "@/utils/logger";
 
 export interface XtreamCredentials {
   baseUrl: string;
@@ -35,8 +36,10 @@ export function createXtreamClient({
 
   async function call<T>(params: Params): Promise<T | null> {
     const res = await fetch(buildUrl(params));
-    if (!res.ok)
+    if (!res.ok) {
+      logger.error(`Xtream API ${res.status} em ${params.action ?? "auth"}`);
       throw new Error(`Xtream API ${res.status} em ${params.action ?? "auth"}`);
+    }
 
     if (res.status === 204 || res.status === 205) return null;
 

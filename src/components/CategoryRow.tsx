@@ -1,34 +1,41 @@
-import AntDesign from "@react-native-vector-icons/ant-design/static";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { categories } from "../../db/schema";
+import { IconButton } from "./IconButton";
 
 export type Category = typeof categories.$inferSelect;
 
 export function CategoryRow({
   item,
   onHidden,
+  refresh,
+  loading = false,
 }: {
   item: Category;
   onHidden: (item: Category) => void;
+  refresh: (item: Category) => void;
+  loading?: boolean;
 }) {
   return (
     <View style={styles.row}>
       <Text style={styles.name}>{item.name}</Text>
-      <Pressable
-        style={({ focused }) => [
-          styles.iconButton,
-          focused && styles.iconButtonFocused,
-        ]}
-        onPress={() => onHidden(item)}
-      >
-        {({ focused }) => (
-          <AntDesign
-            name={item.hidden ? "eye-invisible" : "eye"}
-            color={focused ? "#4f9dff" : "#FFF"}
-            size={20}
+      {loading ? (
+        <ActivityIndicator size={30} />
+      ) : (
+        <>
+          <IconButton
+            accessibilityLabel="Sync"
+            name="sync"
+            onPress={() => refresh(item)}
+            disabled={loading}
           />
-        )}
-      </Pressable>
+          <IconButton
+            accessibilityLabel="Hidden"
+            name={item.hidden ? "eye-invisible" : "eye"}
+            onPress={() => onHidden(item)}
+            disabled={loading}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -48,6 +55,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+    gap: 20,
   },
   name: {
     color: "#FFF",

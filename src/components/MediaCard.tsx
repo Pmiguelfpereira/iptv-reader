@@ -5,7 +5,7 @@ export type MediaItem = {
   id: string;
   title: string;
   poster: string | null;
-  source: string;
+  ext?: string;
 };
 
 export default function MediaCard({
@@ -57,6 +57,7 @@ const styles = StyleSheet.create({
     aspectRatio: 2 / 3,
     borderRadius: 8,
     backgroundColor: "#1e1e1e",
+    objectFit: "contain",
   },
   imageFocused: {
     borderWidth: 3,

@@ -56,4 +56,5 @@ export const serieEpisode = sqliteTable("serie_episode", {
   seasonNumber: integer("season_number").notNull(),
   episodeNum: integer("episode_num").notNull(),
   containerExtension: text("container_extension"),
+  watched: integer("watched", { mode: "boolean" }).notNull().default(false),
 });

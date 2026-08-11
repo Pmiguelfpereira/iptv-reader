@@ -1,39 +1,60 @@
 import MediaBrowser from "@/components/MediaBrowser";
 import { MediaItem } from "@/components/MediaCard";
+import { ScreenFade } from "@/components/ScreenFade";
 import { SelectOption } from "@/components/Select";
-import { playInVlc } from "@/utils/vlc";
+import { useSyncStore } from "@/store/sync";
 import { and, eq } from "drizzle-orm";
-import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { useState } from "react";
-import { StyleSheet } from "react-native";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../db";
 import { categories, series } from "../../db/schema";
 
 export default function Series() {
   const [category, setCategory] = useState<string | null>(null);
+  const [options, setOptions] = useState<SelectOption[]>([]);
+  const [mediaItem, setMediaItem] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const categoryVersions = useSyncStore((s) => s.categoryVersions["series"]);
+  const contentVersions = useSyncStore((s) => s.contentVersions["series"]);
 
   const handlePressItem = (item: MediaItem) => {
-    try {
-      playInVlc("https://iptv-org.github.io/iptv/index.m3u", item.title);
-    } catch (e) {
-      console.error("Error launching VLC:", e);
-    }
+    router.navigate({
+      pathname: "/serie/[id]",
+      params: { id: item.id },
+    });
   };
-  const { data } = useLiveQuery(
-    db
-      .select()
-      .from(categories)
-      .where(and(eq(categories.type, "series"), eq(categories.hidden, false))),
-  );
 
-  const { data: dataMedia } = useLiveQuery(
-    db
-      .select({
-        serieId: series.serieId,
-        name: series.name,
-        image: series.image,
-      })
+  useEffect(() => {
+    let cancelled = false;
+    db.select()
+      .from(categories)
+      .where(and(eq(categories.type, "series"), eq(categories.hidden, false)))
+      .then(
+        (r) =>
+          !cancelled &&
+          setOptions(
+            (r ?? []).map((c) => ({
+              label: c.name,
+              value: String(c.categoryId),
+            })),
+          ),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryVersions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    db.select({
+      serieId: series.serieId,
+      name: series.name,
+      image: series.image,
+    })
       .from(series)
       .innerJoin(categories, eq(series.categoryId, categories.categoryId))
       .where(
@@ -41,38 +62,47 @@ export default function Series() {
           ? and(
               eq(categories.type, "series"),
               eq(categories.categoryId, Number(category)),
+              eq(categories.hidden, false),
             )
-          : eq(categories.type, "series"),
-      ),
-    [category],
-  );
-  const media: MediaItem[] = dataMedia.map((item) => ({
-    id: String(item.serieId),
-    title: item.name,
-    poster: item.image,
-    source: "https://iptv-org.github.io/iptv/index.m3u",
-  }));
-
-  const options: SelectOption[] = (data ?? []).map((c) => ({
-    label: c.name,
-    value: String(c.categoryId),
-  }));
+          : and(eq(categories.type, "series"), eq(categories.hidden, false)),
+      )
+      .then((r) => {
+        if (cancelled) return;
+        setMediaItem(
+          r.map((item) => ({
+            id: String(item.serieId),
+            title: item.name,
+            poster: item.image,
+          })),
+        );
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [category, contentVersions]);
 
   return (
-    <>
+    <ScreenFade>
       <SafeAreaView
         style={styles.container}
         edges={["top", "bottom", "left", "right"]}
       >
-        <MediaBrowser
-          options={options}
-          value={category}
-          onChange={setCategory}
-          media={media}
-          onPressItem={handlePressItem}
-        />
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size={30} />
+          </View>
+        ) : (
+          <MediaBrowser
+            options={options}
+            value={category}
+            onChange={setCategory}
+            media={mediaItem}
+            onPressItem={handlePressItem}
+          />
+        )}
       </SafeAreaView>
-    </>
+    </ScreenFade>
   );
 }
 
@@ -81,5 +111,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#121212",
     padding: 8,
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

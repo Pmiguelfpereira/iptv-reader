@@ -1,6 +1,8 @@
 import { IconButton } from "@/components/IconButton";
 import TabItem from "@/components/TabItem";
+import { ToastHost } from "@/components/ToastHost";
 import { useAccountStore } from "@/store/account";
+import { useToastStore } from "@/store/toast";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { Href, router, SplashScreen, Stack, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -28,7 +30,7 @@ export default function Layout() {
   const { success, error } = useMigrations(db, migrations);
   const pathname = usePathname();
   const hydrate = useAccountStore((state) => state.hydrate);
-
+  const toastShow = useToastStore((state) => state.show);
   useEffect(() => {
     if (success || error) {
       SplashScreen.hideAsync();
@@ -36,7 +38,10 @@ export default function Layout() {
     if (success) hydrate();
   }, [success, error]);
 
-  const hiddenHeader = pathname == "/settings" || pathname == "/categories";
+  const hiddenHeader =
+    pathname == "/settings" ||
+    pathname == "/categories" ||
+    pathname.startsWith("/serie/");
   if (error) return <Text>Erro na BD: {error.message}</Text>;
   if (!success) return <Text>A preparar a base de dados…</Text>;
 
@@ -51,12 +56,12 @@ export default function Layout() {
             <View style={styles.header}>
               <IconButton
                 name="cloud-sync"
-                accessibilityLabel="Sincronizar"
+                accessibilityLabel="Sync"
                 href="/categories"
               />
               <IconButton
                 name="setting"
-                accessibilityLabel="Opções"
+                accessibilityLabel="Options"
                 href="/settings"
               />
             </View>
@@ -69,7 +74,7 @@ export default function Layout() {
                     key={tabName}
                     label={tabName}
                     isActive={isActive}
-                    onPress={() => router.push(tabUrl)}
+                    onPress={() => router.replace(tabUrl)}
                   />
                 );
               })}
@@ -84,18 +89,20 @@ export default function Layout() {
           headerTintColor: "#fff",
           contentStyle: { backgroundColor: "#121212" },
           animation: "none",
+          freezeOnBlur: true,
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerTitle: "Settings" }} />
         <Stack.Screen name="series" options={{ headerShown: false }} />
         <Stack.Screen name="movies" options={{ headerShown: false }} />
-
+        <Stack.Screen name="serie/[id]" />
         <Stack.Screen
           name="categories"
           options={{ headerTitle: "Categories" }}
         />
       </Stack>
+      <ToastHost />
     </SafeAreaProvider>
   );
 }

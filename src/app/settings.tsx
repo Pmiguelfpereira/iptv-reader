@@ -1,6 +1,11 @@
 import Field from "@/components/Field";
+import { ScreenFade } from "@/components/ScreenFade";
+import { XtreamClient } from "@/lib/xtream";
 import { useAccountStore } from "@/store/account";
-import { useState } from "react";
+import { useSyncStore } from "@/store/sync";
+import { useToastStore } from "@/store/toast";
+import { logger } from "@/utils/logger";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,17 +18,32 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../db";
 import { account, categories, movies, series, tv } from "../../db/schema";
 
+const CATEGORY_SOURCES = [
+  { fetch: (c: XtreamClient) => c.getLiveCategories(), type: "live" as const },
+  { fetch: (c: XtreamClient) => c.getVodCategories(), type: "movie" as const },
+  {
+    fetch: (c: XtreamClient) => c.getSeriesCategories(),
+    type: "series" as const,
+  },
+];
+
 export default function Settings() {
-  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_XTREAM_URL ?? "");
-  const [username, setUsername] = useState(
-    process.env.EXPO_PUBLIC_XTREAM_USERNAME ?? "",
-  );
-  const [password, setPassword] = useState(
-    process.env.EXPO_PUBLIC_XTREAM_PASSWORD ?? "",
-  );
+  const [url, setUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
   const hydrated = useAccountStore((state) => state.hydrated);
+
+  const accountStored = useAccountStore((s) => s.account);
+
   const setAccount = useAccountStore((state) => state.setAccount);
+
   const [saving, setSaving] = useState(false);
+
+  const toastShow = useToastStore((state) => state.show);
+
+  const bumpCategories = useSyncStore.getState().bumpCategories;
+
   const canSave =
     url.trim() !== "" && username.trim() !== "" && password !== "";
 
@@ -31,11 +51,13 @@ export default function Settings() {
     setSaving(true);
     try {
       const accountData = await db.transaction(async (tx) => {
-        await tx.delete(account);
-        await tx.delete(series);
-        await tx.delete(tv);
-        await tx.delete(categories);
-        await tx.delete(movies);
+        await Promise.all([
+          tx.delete(account),
+          tx.delete(series),
+          tx.delete(tv),
+          tx.delete(categories),
+          tx.delete(movies),
+        ]);
 
         const [data] = await tx
           .insert(account)
@@ -51,115 +73,110 @@ export default function Settings() {
         return data;
       });
 
-      if (accountData) {
-        setAccount(accountData);
+      if (accountData) setAccount(accountData);
+
+      const client = useAccountStore.getState().client;
+      if (!client) return;
+
+      const results = await Promise.all(
+        CATEGORY_SOURCES.map(async (source) => ({
+          type: source.type,
+          list: await source.fetch(client),
+        })),
+      );
+
+      const rows = results.flatMap(({ type, list }) =>
+        (list ?? []).map((catg) => ({
+          categoryId: Number(catg.category_id),
+          name: catg.category_name,
+          type,
+        })),
+      );
+
+      if (rows.length) {
+        await db.insert(categories).values(rows);
       }
-      const xtreamClient = useAccountStore.getState().client;
-
-      if (xtreamClient) {
-        const [live, vod, series] = await Promise.all([
-          xtreamClient.getLiveCategories(),
-          xtreamClient.getVodCategories(),
-          xtreamClient.getSeriesCategories(),
-        ]);
-
-        if (live) {
-          const tvCatgData = live.map((catg) => {
-            return {
-              categoryId: Number(catg.category_id),
-              name: catg.category_name,
-              type: "live" as const,
-            };
-          });
-
-          await db.insert(categories).values(tvCatgData);
-        }
-        if (vod) {
-          const tvCatgData = vod.map((catg) => {
-            return {
-              categoryId: Number(catg.category_id),
-              name: catg.category_name,
-              type: "movie" as const,
-            };
-          });
-
-          await db.insert(categories).values(tvCatgData);
-        }
-        if (series) {
-          const tvCatgData = series.map((catg) => {
-            return {
-              categoryId: Number(catg.category_id),
-              name: catg.category_name,
-              type: "series" as const,
-            };
-          });
-
-          await db.insert(categories).values(tvCatgData);
-        }
-      }
+      toastShow("Sync completed successfully.", "success");
+    } catch (err) {
+      logger.error("Sync failed", err);
+      toastShow("Sync failed.", "error");
     } finally {
       setSaving(false);
+      (["live", "movie", "series"] as const).forEach(bumpCategories);
     }
   };
 
+  useEffect(() => {
+    if (!hydrated) return;
+    setUrl(accountStored?.url ?? process.env.EXPO_PUBLIC_XTREAM_URL ?? "");
+    setUsername(
+      accountStored?.username ?? process.env.EXPO_PUBLIC_XTREAM_USERNAME ?? "",
+    );
+    setPassword(
+      accountStored?.password ?? process.env.EXPO_PUBLIC_XTREAM_PASSWORD ?? "",
+    );
+  }, [hydrated, accountStored]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.form}>
-        <Field label="URL">
-          <TextInput
-            style={styles.input}
-            value={url}
-            onChangeText={setUrl}
-            placeholder="https://exemplo.pt"
-            placeholderTextColor={styles.placeholder.color}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            inputMode="url"
-          />
-        </Field>
+    <ScreenFade>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.form}>
+          <Field label="URL">
+            <TextInput
+              style={styles.input}
+              value={url}
+              onChangeText={setUrl}
+              placeholder="https://exemplo.pt"
+              placeholderTextColor={styles.placeholder.color}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              inputMode="url"
+            />
+          </Field>
 
-        <Field label="Utilizador">
-          <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            placeholder="utilizador"
-            placeholderTextColor={styles.placeholder.color}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </Field>
+          <Field label="Utilizador">
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="utilizador"
+              placeholderTextColor={styles.placeholder.color}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Field>
 
-        <Field label="Password">
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            placeholderTextColor={styles.placeholder.color}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </Field>
-      </View>
+          <Field label="Password">
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              placeholderTextColor={styles.placeholder.color}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Field>
+        </View>
 
-      <Pressable
-        onPress={handleSave}
-        disabled={!canSave || saving || !hydrated}
-        style={({ pressed }) => [
-          styles.button,
-          { opacity: !canSave || saving ? 0.4 : pressed ? 0.85 : 1 },
-        ]}
-      >
-        {saving ? (
-          <ActivityIndicator color="#ffffff" />
-        ) : (
-          <Text style={styles.buttonText}>Save</Text>
-        )}
-      </Pressable>
-    </SafeAreaView>
+        <Pressable
+          onPress={handleSave}
+          disabled={!canSave || saving || !hydrated}
+          style={({ pressed }) => [
+            styles.button,
+            { opacity: !canSave || saving ? 0.4 : pressed ? 0.85 : 1 },
+          ]}
+        >
+          {saving ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>Save</Text>
+          )}
+        </Pressable>
+      </SafeAreaView>
+    </ScreenFade>
   );
 }
 
