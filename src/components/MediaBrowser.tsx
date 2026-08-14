@@ -56,5 +56,5 @@ export default function MediaBrowser({
 }
 
 const styles = StyleSheet.create({
-  main: { gap: 10, flex: 1 },
+  main: { gap: 20, flex: 1 },
 });

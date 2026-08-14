@@ -52,7 +52,7 @@ describe("Select", () => {
       const field = screen.getByText("Selecionar");
 
       expect(field).toBeOnTheScreen();
-      expect(field).toHaveStyle({ color: "#8a8a8a" });
+      expect(field).toHaveStyle({ color: "#000" });
     });
 
     it("shows a custom placeholder", async () => {
@@ -68,7 +68,7 @@ describe("Select", () => {
       const field = screen.getByText("Comédia");
 
       expect(field).toBeOnTheScreen();
-      expect(field).toHaveStyle({ color: "#fff", fontSize: 16 });
+      expect(field).toHaveStyle({ color: "#000", fontSize: 16 });
       expect(screen.queryByText("Selecionar")).not.toBeOnTheScreen();
     });
 
@@ -84,7 +84,7 @@ describe("Select", () => {
       const chevron = screen.getByTestId("icon-down");
 
       expect(chevron).toHaveProp("size", 18);
-      expect(chevron).toHaveProp("color", "#8a8a8a");
+      expect(chevron).toHaveProp("color", "#6E6E6E");
     });
   });
 
@@ -209,7 +209,7 @@ describe("Select", () => {
       await fireEvent.press(screen.getByText("Comédia"));
 
       expect(screen.getByTestId("icon-check")).toBeOnTheScreen();
-      expect(screen.getByTestId("icon-check")).toHaveProp("color", "#4f9dff");
+      expect(screen.getByTestId("icon-check")).toHaveProp("color", "#111");
     });
 
     it("clears the search when the sheet is reopened", async () => {

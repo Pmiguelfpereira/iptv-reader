@@ -59,7 +59,7 @@ describe("OptionRow", () => {
 
     expect(icon).toHaveProp("name", "check");
     expect(icon).toHaveProp("size", 20);
-    expect(icon).toHaveProp("color", "#4f9dff");
+    expect(icon).toHaveProp("color", "#111");
   });
 
   it("uses the inactive styles by default", async () => {
@@ -75,7 +75,7 @@ describe("OptionRow", () => {
       paddingVertical: 18,
     });
     expect(screen.getByText("Filmes")).toHaveStyle({
-      color: "#cfcfcf",
+      color: "#1A1A1A",
       fontSize: 18,
     });
   });
@@ -83,9 +83,9 @@ describe("OptionRow", () => {
   it("highlights the row and the label when active", async () => {
     await render(<OptionRow option={option} isActive onSelect={jest.fn()} />);
 
-    expect(row()).toHaveStyle({ backgroundColor: "#2f2f2f" });
+    expect(row()).toHaveStyle({ backgroundColor: "#F5F5F5" });
     expect(screen.getByText("Filmes")).toHaveStyle({
-      color: "#fff",
+      color: "#111",
       fontWeight: "500",
     });
   });
@@ -100,13 +100,11 @@ describe("OptionRow", () => {
     // O estado `focused` só chega na próxima renderização
     await waitFor(() =>
       expect(row()).toHaveStyle({
-        backgroundColor: "#3a3a5a",
-        borderLeftWidth: 4,
-        borderLeftColor: "#4f9dff",
+        backgroundColor: "rgba(79, 157, 255, 0.15)",
       }),
     );
     expect(screen.getByText("Filmes")).toHaveStyle({
-      color: "#fff",
+      color: "#111",
       fontWeight: "500",
     });
   });
@@ -118,15 +116,19 @@ describe("OptionRow", () => {
 
     fireEvent(screen.getByText("Filmes"), "focus");
     await waitFor(() =>
-      expect(row()).toHaveStyle({ backgroundColor: "#3a3a5a" }),
+      expect(row()).toHaveStyle({
+        backgroundColor: "rgba(79, 157, 255, 0.15)",
+      }),
     );
 
     fireEvent(screen.getByText("Filmes"), "blur");
 
     await waitFor(() =>
-      expect(row()).not.toHaveStyle({ backgroundColor: "#3a3a5a" }),
+      expect(row()).not.toHaveStyle({
+        backgroundColor: "rgba(79, 157, 255, 0.15)",
+      }),
     );
-    expect(screen.getByText("Filmes")).toHaveStyle({ color: "#cfcfcf" });
+    expect(screen.getByText("Filmes")).toHaveStyle({ color: "#1A1A1A" });
   });
 
   it("keeps the active background when focused on an active option", async () => {
@@ -136,7 +138,9 @@ describe("OptionRow", () => {
 
     // O estilo de foco vem depois do de activo, por isso sobrepõe-se
     await waitFor(() =>
-      expect(row()).toHaveStyle({ backgroundColor: "#3a3a5a" }),
+      expect(row()).toHaveStyle({
+        backgroundColor: "rgba(79, 157, 255, 0.15)",
+      }),
     );
     expect(screen.getByTestId("icon")).toBeOnTheScreen();
   });

@@ -34,7 +34,7 @@ export function OptionRow({
       >
         {option.label}
       </Text>
-      {isActive && <AntDesign name="check" size={20} color="#4f9dff" />}
+      {isActive && <AntDesign name="check" size={20} color="#111" />}
     </Pressable>
   );
 }
@@ -47,12 +47,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 18,
   },
-  optionActive: { backgroundColor: "#2f2f2f" },
+  optionActive: { backgroundColor: "#F5F5F5" },
   optionFocused: {
-    backgroundColor: "#3a3a5a",
-    borderLeftWidth: 4,
-    borderLeftColor: "#4f9dff",
+    backgroundColor: "rgba(79, 157, 255, 0.15)",
   },
-  optionText: { color: "#cfcfcf", fontSize: 18 },
-  optionTextActive: { color: "#fff", fontWeight: "500" },
+  optionText: { color: "#1A1A1A", fontSize: 18 },
+  optionTextActive: { color: "#111", fontWeight: "500" },
 });

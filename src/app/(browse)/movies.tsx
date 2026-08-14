@@ -29,7 +29,6 @@ export default function Movies() {
   const handlePressItem = useCallback(
     (item: MediaItem) => {
       if (!xtreamClient) return;
-      console.log(xtreamClient.vodUrl(Number(item.id), item.ext ?? ""));
       playInVlc(
         xtreamClient.vodUrl(Number(item.id), item.ext ?? ""),
         item.title,
@@ -100,7 +99,7 @@ export default function Movies() {
     <ScreenFade>
       <SafeAreaView
         style={styles.container}
-        edges={["top", "bottom", "left", "right"]}
+        edges={["bottom", "left", "right"]}
       >
         {loading ? (
           <View style={styles.center}>
@@ -113,7 +112,7 @@ export default function Movies() {
             onChange={setCategory}
             media={mediaItem}
             onPressItem={handlePressItem}
-            useSelect={false}
+            useSelect={true}
           />
         )}
       </SafeAreaView>

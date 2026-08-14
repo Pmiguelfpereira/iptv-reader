@@ -95,7 +95,7 @@ export default function LiveScreen() {
     <ScreenFade>
       <SafeAreaView
         style={styles.container}
-        edges={["top", "bottom", "left", "right"]}
+        edges={["bottom", "left", "right"]}
       >
         {loading ? (
           <View style={styles.center}>
@@ -109,6 +109,7 @@ export default function LiveScreen() {
             media={mediaItem}
             onPressItem={handlePressItem}
             useList={true}
+            useSelect={true}
           />
         )}
       </SafeAreaView>

@@ -56,7 +56,7 @@ export default function Select({
         <Text style={[styles.fieldText, !selected && styles.placeholder]}>
           {selected ? selected.label : placeholder}
         </Text>
-        <AntDesign name="down" size={18} color="#8a8a8a" />
+        <AntDesign name="down" size={18} color="#6E6E6E" />
       </Pressable>
 
       <Modal
@@ -79,13 +79,13 @@ export default function Select({
                 <AntDesign
                   name="search"
                   size={16}
-                  color="#8a8a8a"
+                  color="#8A8A8A"
                   style={[searchFocused && styles.searchFocused]}
                 />
                 <TextInput
                   style={styles.search}
                   placeholder="Search..."
-                  placeholderTextColor="#8a8a8a"
+                  placeholderTextColor="#1A1A1A"
                   value={query}
                   onChangeText={setQuery}
                   onFocus={() => setSearchFocused(true)}
@@ -129,9 +129,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1e1e1e",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: "#D6D6D6",
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -139,18 +139,20 @@ const styles = StyleSheet.create({
   fieldFocused: {
     borderColor: "#4f9dff",
   },
-  fieldText: { color: "#fff", fontSize: 16 },
-  placeholder: { color: "#8a8a8a" },
+  fieldText: { color: "#000", fontSize: 16 },
+  placeholder: { color: "#000" },
+
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,.24)",
     justifyContent: "flex-start",
     paddingHorizontal: 24,
   },
+
   sheet: {
-    backgroundColor: "#1e1e1e",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: "#FFFFFF",
     borderRadius: 12,
     overflow: "hidden",
     maxHeight: "70%", // <- trava a altura, o resto faz scroll
@@ -167,10 +169,10 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   searchFocused: { color: "#4f9dff" },
-  search: { flex: 1, color: "#fff", fontSize: 18, padding: 0 },
+  search: { flex: 1, color: "#1A1A1A", fontSize: 18, padding: 0 },
 
-  list: { flexShrink: 1 },
+  list: { flexShrink: 1, color: "#1A1A1A" },
 
-  empty: { color: "#8a8a8a", fontSize: 15, textAlign: "center", padding: 24 },
+  empty: { color: "#1A1A1A", fontSize: 15, textAlign: "center", padding: 24 },
   listContent: { paddingVertical: 6 },
 });
