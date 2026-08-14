@@ -24,7 +24,11 @@ export function IconButton({
       disabled={disabled}
     >
       {({ focused }) => (
-        <AntDesign name={name} color={focused ? "#4f9dff" : "#FFF"} size={30} />
+        <AntDesign
+          name={name}
+          color={focused ? "#4f9dff" : "#1e1e1e"}
+          size={25}
+        />
       )}
     </Pressable>
   );

@@ -1,0 +1,66 @@
+import { IconButton } from "@/components/IconButton";
+import { router } from "expo-router";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TVFocusGuideView,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const Container = Platform.isTV ? TVFocusGuideView : View;
+
+export function AppHeader({ title }: { title?: string }) {
+  return (
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
+      <Container
+        style={styles.header}
+        {...(Platform.isTV && {
+          autoFocus: true,
+          trapFocusLeft: true,
+          trapFocusRight: true,
+        })}
+      >
+        <View style={styles.left}>
+          <IconButton
+            name="left"
+            accessibilityLabel="Back"
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/");
+            }}
+          />
+          <Text style={styles.title}>{title}</Text>
+        </View>
+
+        <View style={styles.actions}>
+          <IconButton
+            name="cloud-sync"
+            accessibilityLabel="Sync"
+            href="/(sync)"
+          />
+          <IconButton
+            name="setting"
+            accessibilityLabel="Settings"
+            href="/settings"
+          />
+        </View>
+      </Container>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { backgroundColor: "#fff" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  left: { flexDirection: "row", alignItems: "center", gap: 8 },
+  title: { fontSize: 18, fontWeight: "600" },
+  actions: { flexDirection: "row", gap: 10 },
+});

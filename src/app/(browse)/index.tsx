@@ -2,36 +2,43 @@ import MediaBrowser from "@/components/MediaBrowser";
 import { MediaItem } from "@/components/MediaCard";
 import { ScreenFade } from "@/components/ScreenFade";
 import { SelectOption } from "@/components/Select";
+import { useBackToTabs } from "@/hook/useBackToTabs";
+import { usePlayInVlc } from "@/hook/usePlayInVlc";
+import { useAccountStore } from "@/store/account";
 import { useSyncStore } from "@/store/sync";
 import { and, eq } from "drizzle-orm";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { db } from "../../db";
-import { categories, series } from "../../db/schema";
+import { db } from "../../../db";
+import { categories, tv } from "../../../db/schema";
 
-export default function Series() {
+export default function LiveScreen() {
   const [category, setCategory] = useState<string | null>(null);
   const [options, setOptions] = useState<SelectOption[]>([]);
   const [mediaItem, setMediaItem] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const categoryVersions = useSyncStore((s) => s.categoryVersions["series"]);
-  const contentVersions = useSyncStore((s) => s.contentVersions["series"]);
+  const xtreamClient = useAccountStore((state) => state.client);
 
-  const handlePressItem = (item: MediaItem) => {
-    router.navigate({
-      pathname: "/serie/[id]",
-      params: { id: item.id },
-    });
-  };
+  const categoryVersions = useSyncStore((s) => s.categoryVersions["live"]);
+  const contentVersions = useSyncStore((s) => s.contentVersions["live"]);
+
+  const playInVlc = usePlayInVlc();
+
+  const handlePressItem = useCallback(
+    (item: MediaItem) => {
+      if (!xtreamClient) return;
+      playInVlc(xtreamClient.liveUrl(Number(item.id)), item.title);
+    },
+    [xtreamClient, playInVlc],
+  );
 
   useEffect(() => {
     let cancelled = false;
     db.select()
       .from(categories)
-      .where(and(eq(categories.type, "series"), eq(categories.hidden, false)))
+      .where(and(eq(categories.type, "live"), eq(categories.hidden, false)))
       .then(
         (r) =>
           !cancelled &&
@@ -51,26 +58,26 @@ export default function Series() {
     let cancelled = false;
     setLoading(true);
     db.select({
-      serieId: series.serieId,
-      name: series.name,
-      image: series.image,
+      tvId: tv.tvId,
+      name: tv.name,
+      image: tv.image,
     })
-      .from(series)
-      .innerJoin(categories, eq(series.categoryId, categories.categoryId))
+      .from(tv)
+      .innerJoin(categories, eq(tv.categoryId, categories.categoryId))
       .where(
         category
           ? and(
-              eq(categories.type, "series"),
+              eq(categories.type, "live"),
               eq(categories.categoryId, Number(category)),
               eq(categories.hidden, false),
             )
-          : and(eq(categories.type, "series"), eq(categories.hidden, false)),
+          : and(eq(categories.type, "live"), eq(categories.hidden, false)),
       )
       .then((r) => {
         if (cancelled) return;
         setMediaItem(
           r.map((item) => ({
-            id: String(item.serieId),
+            id: String(item.tvId),
             title: item.name,
             poster: item.image,
           })),
@@ -82,6 +89,8 @@ export default function Series() {
     };
   }, [category, contentVersions]);
 
+  useBackToTabs();
+
   return (
     <ScreenFade>
       <SafeAreaView
@@ -90,7 +99,7 @@ export default function Series() {
       >
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator size={30} />
+            <ActivityIndicator />
           </View>
         ) : (
           <MediaBrowser
@@ -99,6 +108,7 @@ export default function Series() {
             onChange={setCategory}
             media={mediaItem}
             onPressItem={handlePressItem}
+            useList={true}
           />
         )}
       </SafeAreaView>
@@ -109,7 +119,7 @@ export default function Series() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#fff",
     padding: 8,
   },
   center: {

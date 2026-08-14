@@ -1,3 +1,4 @@
+import { useFocusStore } from "@/store/focus";
 import { useState } from "react";
 import {
   FlatList,
@@ -23,6 +24,7 @@ export default function MediaGrid({
 }) {
   const { width } = useWindowDimensions();
   const [areaHeight, setAreaHeight] = useState(0);
+  const tabsHandle = useFocusStore((s) => s.tabsHandle);
 
   const numColumns = Math.max(
     2,
@@ -34,6 +36,9 @@ export default function MediaGrid({
   const onLayout = (e: LayoutChangeEvent) => {
     setAreaHeight(e.nativeEvent.layout.height);
   };
+
+  const Container = Platform.isTV ? TVFocusGuideView : View;
+
   const list = (
     <FlatList
       style={{ height: areaHeight }}
@@ -43,11 +48,12 @@ export default function MediaGrid({
       numColumns={numColumns}
       contentContainerStyle={styles.content}
       columnWrapperStyle={{ gap: GAP }}
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <MediaCard
           item={item}
           width={itemWidth}
           onPress={() => onPressItem?.(item)}
+          nextFocusUp={index === 0 ? (tabsHandle ?? undefined) : undefined}
         />
       )}
     />
@@ -57,9 +63,9 @@ export default function MediaGrid({
     <View style={{ flex: 1 }} onLayout={onLayout}>
       {areaHeight > 0 &&
         (Platform.isTV ? (
-          <TVFocusGuideView style={{ height: areaHeight }} autoFocus>
+          <Container style={{ height: areaHeight }} autoFocus>
             {list}
-          </TVFocusGuideView>
+          </Container>
         ) : (
           list
         ))}

@@ -22,6 +22,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#FFF",
+    color: "#1e1e1e",
   },
 });

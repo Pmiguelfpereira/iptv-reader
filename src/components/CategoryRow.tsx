@@ -1,67 +1,72 @@
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import AntDesign from "@react-native-vector-icons/ant-design/static";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+} from "react-native";
 import { categories } from "../../db/schema";
-import { IconButton } from "./IconButton";
 
 export type Category = typeof categories.$inferSelect;
 
 export function CategoryRow({
   item,
-  onHidden,
-  refresh,
+  onPress,
   loading = false,
+  nextFocusUp,
 }: {
   item: Category;
-  onHidden: (item: Category) => void;
-  refresh: (item: Category) => void;
+  onPress: (item: Category) => void;
   loading?: boolean;
+  nextFocusUp?: number;
 }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.name}>{item.name}</Text>
-      {loading ? (
-        <ActivityIndicator size={30} />
-      ) : (
+    <Pressable
+      onPress={() => !loading && onPress(item)}
+      style={({ focused }) => [styles.row, focused && styles.rowFocused]}
+      {...(Platform.isTV && {
+        nextFocusUp,
+      })}
+    >
+      {({ focused }) => (
         <>
-          <IconButton
-            accessibilityLabel="Sync"
-            name="sync"
-            onPress={() => refresh(item)}
-            disabled={loading}
-          />
-          <IconButton
-            accessibilityLabel="Hidden"
-            name={item.hidden ? "eye-invisible" : "eye"}
-            onPress={() => onHidden(item)}
-            disabled={loading}
-          />
+          <Text style={[styles.name]} numberOfLines={1}>
+            {item.name}
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator size={24} />
+          ) : (
+            <AntDesign
+              name={item.hidden ? "eye-invisible" : "sync"}
+              size={24}
+              color={focused ? "#4f9dff" : "#000"}
+            />
+          )}
         </>
       )}
-    </View>
+    </Pressable>
   );
 }
+
 const styles = StyleSheet.create({
-  container: {
-    padding: 8,
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  text: {
-    color: "#FFFFFF",
-  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     gap: 20,
   },
+  rowFocused: {
+    backgroundColor: "rgba(79, 157, 255, 0.15)",
+  },
   name: {
-    color: "#FFF",
+    color: "#000",
     fontSize: 16,
     flex: 1,
-    marginRight: 12,
   },
   iconButton: {
     width: 40,
@@ -69,8 +74,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-  },
-  iconButtonFocused: {
-    backgroundColor: "rgba(79, 157, 255, 0.15)",
   },
 });

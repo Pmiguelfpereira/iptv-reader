@@ -1,3 +1,4 @@
+import { AppHeader } from "@/components/AppHeader";
 import Field from "@/components/Field";
 import { ScreenFade } from "@/components/ScreenFade";
 import { XtreamClient } from "@/lib/xtream";
@@ -119,9 +120,13 @@ export default function Settings() {
 
   return (
     <ScreenFade>
-      <SafeAreaView style={styles.container}>
+      <AppHeader title={"Settings"} />
+      <SafeAreaView
+        edges={["bottom", "left", "right"]}
+        style={styles.container}
+      >
         <View style={styles.form}>
-          <Field label="URL">
+          <Field label="Server">
             <TextInput
               style={styles.input}
               value={url}
@@ -135,7 +140,7 @@ export default function Settings() {
             />
           </Field>
 
-          <Field label="Utilizador">
+          <Field label="User">
             <TextInput
               style={styles.input}
               value={username}
@@ -182,19 +187,18 @@ export default function Settings() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, gap: 24 },
-  title: { fontSize: 26, fontWeight: "700", color: "#fff" },
   form: { gap: 18 },
   input: {
     borderWidth: 1,
-    borderColor: "#d0d0d0",
+    borderColor: "#f9f9f7",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#111111",
-    backgroundColor: "#ffffff",
+    color: "#292928",
+    backgroundColor: "#f9f9f7",
   },
-  placeholder: { color: "#999999" },
+  placeholder: { color: "#f9f9f7" },
   button: {
     backgroundColor: "#2563eb",
     borderRadius: 10,

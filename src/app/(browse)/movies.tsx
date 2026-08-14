@@ -2,6 +2,7 @@ import MediaBrowser from "@/components/MediaBrowser";
 import { MediaItem } from "@/components/MediaCard";
 import { ScreenFade } from "@/components/ScreenFade";
 import { SelectOption } from "@/components/Select";
+import { useBackToTabs } from "@/hook/useBackToTabs";
 import { usePlayInVlc } from "@/hook/usePlayInVlc";
 import { useAccountStore } from "@/store/account";
 import { useSyncStore } from "@/store/sync";
@@ -9,8 +10,8 @@ import { and, eq } from "drizzle-orm";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { db } from "../../db";
-import { categories, movies } from "../../db/schema";
+import { db } from "../../../db";
+import { categories, movies } from "../../../db/schema";
 
 export default function Movies() {
   const [category, setCategory] = useState<string | null>(null);
@@ -93,6 +94,8 @@ export default function Movies() {
     };
   }, [category, contentVersions]);
 
+  useBackToTabs();
+
   return (
     <ScreenFade>
       <SafeAreaView
@@ -110,6 +113,7 @@ export default function Movies() {
             onChange={setCategory}
             media={mediaItem}
             onPressItem={handlePressItem}
+            useSelect={false}
           />
         )}
       </SafeAreaView>
@@ -120,7 +124,7 @@ export default function Movies() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#fff",
     padding: 8,
   },
   center: {

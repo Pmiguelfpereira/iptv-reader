@@ -45,7 +45,9 @@
       [
         "@react-native-tvos/config-tv",
         {
-          "isTV": true
+          "isTV": true,
+          "androidTVBanner": "./assets/images/tv-banner.png",
+          "androidTVIcon": "./assets/images/tv-icon.png"
         }
       ],
       "expo-status-bar",

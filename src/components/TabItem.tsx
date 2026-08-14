@@ -1,17 +1,26 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Platform, Pressable, StyleSheet, Text } from "react-native";
 
 export default function TabItem({
   label,
   isActive,
   onPress,
+  onFocus,
+  onBlur,
+  hasTVPreferredFocus = false,
 }: {
   label: string;
   isActive: boolean;
   onPress: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  hasTVPreferredFocus?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      {...(Platform.isTV && { hasTVPreferredFocus })}
       style={({ focused }) => [
         styles.tab,
         isActive && styles.tabActive,
@@ -39,14 +48,14 @@ const styles = StyleSheet.create({
     borderColor: "#4f9dff",
   },
   tabActive: {
-    backgroundColor: "#2f2f2f",
+    backgroundColor: "#111111",
   },
   tabText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#8a8a8a",
+    color: "#6E6E6E",
   },
   tabTextActive: {
-    color: "#fff",
+    color: "#FFFFFF",
   },
 });

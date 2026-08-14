@@ -1,5 +1,5 @@
 import { CatalogType, useSyncStore } from "@/store/sync";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { useCallback, useEffect, useState } from "react";
 import { db } from "../../db";
 import { categories } from "../../db/schema";
@@ -13,6 +13,7 @@ export default function useCategories(type: CatalogType) {
     db.select()
       .from(categories)
       .where(eq(categories.type, type))
+      .orderBy(asc(categories.hidden), asc(categories.categoryId))
       .then((r) => !cancelled && setData(r));
     return () => {
       cancelled = true;

@@ -1,14 +1,10 @@
 // components/MediaBrowser.tsx
 import { MediaItem } from "@/components/MediaCard";
-import MediaGrid from "@/components/MediaGrid";
 import Select, { SelectOption } from "@/components/Select";
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  TVFocusGuideView,
-  View,
-} from "react-native";
+import { Platform, StyleSheet, TVFocusGuideView, View } from "react-native";
+import MediaGrid from "./MediaGrid";
+import MediaList from "./MediaList";
+import { NoData } from "./NoData";
 
 export type MediaBrowserProps = {
   options: SelectOption[];
@@ -17,6 +13,8 @@ export type MediaBrowserProps = {
   media: MediaItem[];
   onPressItem: (item: MediaItem) => void;
   placeholder?: string;
+  useSelect?: boolean;
+  useList?: boolean;
 };
 
 export default function MediaBrowser({
@@ -26,24 +24,31 @@ export default function MediaBrowser({
   media,
   onPressItem,
   placeholder = "Categories",
+  useSelect = false,
+  useList = false,
 }: MediaBrowserProps) {
   const Container = Platform.isTV ? TVFocusGuideView : View;
 
   return (
     <Container style={styles.main}>
-      <Select
-        options={options}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-      />
+      {useSelect && (
+        <Select
+          options={options}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+      )}
+
       <View style={{ flex: 1 }}>
         {media.length > 0 ? (
-          <MediaGrid data={media} onPressItem={onPressItem} />
+          useList ? (
+            <MediaList data={media} onPressItem={onPressItem} />
+          ) : (
+            <MediaGrid data={media} onPressItem={onPressItem} />
+          )
         ) : (
-          <View style={styles.noData}>
-            <Text style={styles.noDataText}>No media available</Text>
-          </View>
+          <NoData />
         )}
       </View>
     </Container>
@@ -52,6 +57,4 @@ export default function MediaBrowser({
 
 const styles = StyleSheet.create({
   main: { gap: 10, flex: 1 },
-  noData: { flex: 1, justifyContent: "center", alignItems: "center" },
-  noDataText: { color: "#fff", fontSize: 18 },
 });

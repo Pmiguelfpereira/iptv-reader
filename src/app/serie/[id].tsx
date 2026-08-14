@@ -1,11 +1,13 @@
+import { AppHeader } from "@/components/AppHeader";
+import { NoData } from "@/components/NoData";
+import { SyncButton } from "@/components/SyncButton";
 import { useAccountStore } from "@/store/account";
 import { useToastStore } from "@/store/toast";
 import { logger } from "@/utils/logger";
 import { playInVlc } from "@/utils/vlc";
-import AntDesign from "@react-native-vector-icons/ant-design/static";
 import { eq } from "drizzle-orm";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -29,6 +31,8 @@ export default function Series() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const toastShow = useToastStore((state) => state.show);
+
+  const [syncing, setSyncing] = useState(false);
 
   const xtreamClient = useAccountStore((state) => state.client);
 
@@ -68,7 +72,7 @@ export default function Series() {
     );
     if (!source) return;
     try {
-      playInVlc(source, item.name ?? "");
+      await playInVlc(source, item.name ?? "");
       await db
         .update(serieEpisode)
         .set({ watched: true })
@@ -87,6 +91,7 @@ export default function Series() {
 
   const getEpisodes = async () => {
     try {
+      setSyncing(true);
       const resultEpisodes = await xtreamClient?.getSeriesInfo(Number(id));
       const rows: EpisodeInsert[] = Object.values(
         resultEpisodes?.episodes ?? {},
@@ -120,6 +125,8 @@ export default function Series() {
         `Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         "error",
       );
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -137,52 +144,71 @@ export default function Series() {
     })();
   }, [loadSerie, loadEpisodes, toastShow]);
 
+  const focusClaimed = useRef(false);
+
   return (
     <>
-      <Stack.Screen options={{ title: serie?.name ?? "Loading…" }} />
+      <AppHeader title={serie?.name ?? "Loading…"} />
       <SafeAreaView
         style={styles.container}
-        edges={["bottom", "left", "right"]}
+        edges={["top", "bottom", "left", "right"]}
       >
-        {(!hydrated || loading) && <ActivityIndicator />}{" "}
+        {(!hydrated || loading) && (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color="#0A84FF" />
+          </View>
+        )}
         {hydrated && (
-          <Container style={styles.main}>
+          <Container
+            style={styles.main}
+            {...(Platform.isTV && {
+              autoFocus: true,
+              trapFocusLeft: true,
+              trapFocusRight: true,
+            })}
+          >
             <View style={styles.header}>
-              <Pressable onPress={getEpisodes} hitSlop={8}>
-                {({ focused }) => (
-                  <AntDesign
-                    name={"sync"}
-                    color={focused ? "#4f9dff" : "#FFF"}
-                    size={20}
-                  />
-                )}
-              </Pressable>
+              <SyncButton
+                label="Sync"
+                onPress={getEpisodes}
+                syncing={syncing}
+                preferFocus
+              />
             </View>
-            <FlatList
-              data={episodes}
-              keyExtractor={(item) => String(item.id)}
-              contentContainerStyle={styles.content}
-              renderItem={({ item, index }) => (
-                <Pressable onPress={() => onSelect?.(item)}>
-                  {({ focused }) => (
-                    <Text
-                      style={[
-                        styles.text,
-                        item.watched && styles.textWatched,
-                        focused && styles.textFocused,
-                      ]}
-                    >
-                      {item.name}
-                    </Text>
-                  )}
-                </Pressable>
-              )}
-              ListEmptyComponent={
-                <View style={styles.empty}>
-                  <Text style={styles.emptyText}>No Data</Text>
-                </View>
-              }
-            />
+            {episodes.length > 0 ? (
+              <FlatList
+                data={episodes}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.content}
+                renderItem={({ item, index }) => (
+                  <Pressable
+                    onPress={() => onSelect(item)}
+                    onFocus={() => {
+                      focusClaimed.current = true;
+                    }}
+                    style={({ focused }) => [
+                      styles.row,
+                      index < episodes.length - 1 && styles.itemBorder,
+                      focused && styles.rowFocused,
+                    ]}
+                  >
+                    {({ focused }) => (
+                      <Text
+                        style={[
+                          styles.text,
+                          item.watched && styles.textWatched,
+                          focused && styles.textFocused,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                    )}
+                  </Pressable>
+                )}
+              />
+            ) : (
+              <NoData />
+            )}
           </Container>
         )}
       </SafeAreaView>
@@ -192,7 +218,7 @@ export default function Series() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#fff",
     padding: 8,
   },
   main: {
@@ -207,11 +233,10 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 18,
-    color: "#d1d1d6",
+    color: "#000",
   },
   textFocused: {
     color: "#0A84FF",
-    fontWeight: "700",
   },
   empty: {
     padding: 24,
@@ -221,5 +246,35 @@ const styles = StyleSheet.create({
   },
   textWatched: {
     color: "#5a5a5e",
+  },
+  syncBtn: { padding: 4 },
+  syncBox: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  syncBoxFocused: { backgroundColor: "#2a2a2a", borderColor: "#0A84FF" },
+
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 20,
+  },
+  rowFocused: {
+    backgroundColor: "rgba(79, 157, 255, 0.15)",
+  },
+  itemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e5e5",
+    paddingBottom: 12,
   },
 });

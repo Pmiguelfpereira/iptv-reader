@@ -99,6 +99,10 @@ export default function Select({
               keyExtractor={(item) => item.value}
               keyboardShouldPersistTaps="handled"
               style={styles.list}
+              contentContainerStyle={styles.listContent}
+              removeClippedSubviews={false}
+              initialNumToRender={20}
+              windowSize={11}
               ListEmptyComponent={
                 <Text style={styles.empty}>Sem resultados</Text>
               }
@@ -165,7 +169,8 @@ const styles = StyleSheet.create({
   searchFocused: { color: "#4f9dff" },
   search: { flex: 1, color: "#fff", fontSize: 18, padding: 0 },
 
-  list: { flexGrow: 0 },
+  list: { flexShrink: 1 },
 
   empty: { color: "#8a8a8a", fontSize: 15, textAlign: "center", padding: 24 },
+  listContent: { paddingVertical: 6 },
 });
