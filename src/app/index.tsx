@@ -21,7 +21,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (account) {
+  if (hydrated && account) {
     return <Redirect href="/(browse)" />;
   }
 

@@ -7,23 +7,27 @@ import {
   Text,
 } from "react-native";
 import { categories } from "../../db/schema";
+import { useSyncQueue } from "@/store/syncQueue";
 
 export type Category = typeof categories.$inferSelect;
 
 export function CategoryRow({
   item,
   onPress,
-  loading = false,
+  onLongPress,
   nextFocusUp,
 }: {
   item: Category;
   onPress: (item: Category) => void;
-  loading?: boolean;
+  onLongPress: (item: Category) => void;
   nextFocusUp?: number;
 }) {
+  const taksRunning = useSyncQueue((state) => state.running);
+  const loading = taksRunning.has(`${item.type}:cat:${item.categoryId}`);
   return (
     <Pressable
       onPress={() => !loading && onPress(item)}
+      onLongPress={() => !loading && onLongPress(item)}
       style={({ focused }) => [styles.row, focused && styles.rowFocused]}
       {...(Platform.isTV && {
         nextFocusUp,

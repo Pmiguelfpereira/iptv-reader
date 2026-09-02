@@ -1,12 +1,5 @@
-import { useState } from "react";
-import {
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image } from "expo-image";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 export type MediaItem = {
   id: string;
@@ -27,11 +20,13 @@ export default function MediaCard({
   onPress: () => void;
   nextFocusUp?: number;
 }) {
-  const [focused, setFocused] = useState(false);
-
   return (
     <Pressable
-      style={({ focused }) => [{ width }, focused && styles.cardFocused]}
+      style={({ focused }) => [
+        { width },
+        styles.main,
+        focused && styles.cardFocused,
+      ]}
       onPress={onPress}
       {...(Platform.isTV && { nextFocusUp })}
     >
@@ -42,7 +37,10 @@ export default function MediaCard({
               <Image
                 source={{ uri: item.poster }}
                 style={[styles.poster, focused && styles.imageFocused]}
-                resizeMode="cover"
+                contentFit="cover"
+                recyclingKey={item.id}
+                cachePolicy="disk"
+                transition={0}
               />
             ) : (
               <View style={[styles.poster, focused && styles.imageFocused]} />
@@ -60,6 +58,9 @@ export default function MediaCard({
   );
 }
 const styles = StyleSheet.create({
+  main: {
+    padding: 8,
+  },
   poster: {
     width: "100%",
     aspectRatio: 2 / 3,

@@ -7,6 +7,7 @@ export default function TabItem({
   onFocus,
   onBlur,
   hasTVPreferredFocus = false,
+  disabled = false,
 }: {
   label: string;
   isActive: boolean;
@@ -14,6 +15,7 @@ export default function TabItem({
   onFocus?: () => void;
   onBlur?: () => void;
   hasTVPreferredFocus?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
@@ -26,6 +28,7 @@ export default function TabItem({
         isActive && styles.tabActive,
         focused && styles.tabFocused,
       ]}
+      disabled={disabled}
     >
       <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
         {label}

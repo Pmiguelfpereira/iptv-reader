@@ -5,12 +5,12 @@ import { useAccountStore } from "@/store/account";
 import { useToastStore } from "@/store/toast";
 import { logger } from "@/utils/logger";
 import { playInVlc } from "@/utils/vlc";
+import { FlashList } from "@shopify/flash-list";
 import { eq } from "drizzle-orm";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Platform,
   Pressable,
   StyleSheet,
@@ -21,8 +21,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../../db";
 import { serieEpisode, series } from "../../../db/schema";
+import { Image } from "expo-image";
 
-type serieEpisodeSchema = typeof serieEpisode.$inferInsert;
 type SerieRow = typeof series.$inferSelect;
 type EpisodeRow = typeof serieEpisode.$inferSelect;
 type EpisodeInsert = typeof serieEpisode.$inferInsert;
@@ -35,8 +35,6 @@ export default function Series() {
   const [syncing, setSyncing] = useState(false);
 
   const xtreamClient = useAccountStore((state) => state.client);
-
-  const hydrated = useAccountStore((state) => state.hydrated);
 
   const [serie, setSerie] = useState<SerieRow | null>(null);
 
@@ -54,7 +52,7 @@ export default function Series() {
   }, [id]);
 
   const loadEpisodes = useCallback(async () => {
-    const rows = await db
+    await db
       .select()
       .from(serieEpisode)
       .where(eq(serieEpisode.serieId, Number(id)))
@@ -65,31 +63,35 @@ export default function Series() {
 
   const Container = Platform.isTV ? TVFocusGuideView : View;
 
-  const onSelect = async (item: serieEpisodeSchema) => {
-    const source = xtreamClient?.seriesUrl(
-      item.episodeId,
-      item.containerExtension ?? "",
-    );
-    if (!source) return;
-    try {
-      await playInVlc(source, item.name ?? "");
-      await db
-        .update(serieEpisode)
-        .set({ watched: true })
-        .where(eq(serieEpisode.episodeId, item.episodeId));
-
-      setEpisodes((prev) =>
-        prev.map((e) =>
-          e.episodeId === item.episodeId ? { ...e, watched: true } : e,
-        ),
+  const onSelect = useCallback(
+    async (item: EpisodeRow) => {
+      const source = xtreamClient?.seriesUrl(
+        item.episodeId,
+        item.containerExtension ?? "",
       );
-    } catch (e) {
-      logger.error("Error launching VLC", e);
-      toastShow("Error launching VLC", "error");
-    }
-  };
+      if (!source) return;
+      try {
+        await playInVlc(source, item.name ?? "");
+        await db
+          .update(serieEpisode)
+          .set({ watched: true })
+          .where(eq(serieEpisode.episodeId, item.episodeId));
+        setEpisodes((prev) =>
+          prev.map((e) =>
+            e.episodeId === item.episodeId ? { ...e, watched: true } : e,
+          ),
+        );
+      } catch (e) {
+        logger.error("Error launching VLC", e);
+        toastShow("Error launching VLC", "error");
+      }
+    },
+    [xtreamClient, toastShow],
+  );
 
   const getEpisodes = async () => {
+    if (syncing) return;
+
     try {
       setSyncing(true);
       const resultEpisodes = await xtreamClient?.getSeriesInfo(Number(id));
@@ -144,73 +146,73 @@ export default function Series() {
     })();
   }, [loadSerie, loadEpisodes, toastShow]);
 
-  const focusClaimed = useRef(false);
-
+  const renderItem = useCallback(
+    ({ item, index }: { item: EpisodeRow; index: number }) => (
+      <Pressable
+        onPress={() => onSelect(item)}
+        style={({ focused }) => [
+          styles.row,
+          index < episodes.length - 1 && styles.itemBorder,
+          focused && styles.rowFocused,
+        ]}
+      >
+        {({ focused }) => (
+          <Text
+            style={[
+              styles.text,
+              item.watched && styles.textWatched,
+              focused && styles.textFocused,
+            ]}
+          >
+            {item.name}
+          </Text>
+        )}
+      </Pressable>
+    ),
+    [],
+  );
   return (
     <>
-      <AppHeader title={serie?.name ?? "Loading…"} />
       <SafeAreaView
         style={styles.container}
         edges={["top", "bottom", "left", "right"]}
       >
-        {(!hydrated || loading) && (
+        {loading && (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color="#0A84FF" />
           </View>
         )}
-        {hydrated && (
-          <Container
-            style={styles.main}
-            {...(Platform.isTV && {
-              autoFocus: true,
-              trapFocusLeft: true,
-              trapFocusRight: true,
-            })}
-          >
-            <View style={styles.header}>
-              <SyncButton
-                label="Sync"
-                onPress={getEpisodes}
-                syncing={syncing}
-                preferFocus
-              />
-            </View>
-            {episodes.length > 0 ? (
-              <FlatList
-                data={episodes}
-                keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={styles.content}
-                renderItem={({ item, index }) => (
-                  <Pressable
-                    onPress={() => onSelect(item)}
-                    onFocus={() => {
-                      focusClaimed.current = true;
-                    }}
-                    style={({ focused }) => [
-                      styles.row,
-                      index < episodes.length - 1 && styles.itemBorder,
-                      focused && styles.rowFocused,
-                    ]}
-                  >
-                    {({ focused }) => (
-                      <Text
-                        style={[
-                          styles.text,
-                          item.watched && styles.textWatched,
-                          focused && styles.textFocused,
-                        ]}
-                      >
-                        {item.name}
-                      </Text>
-                    )}
-                  </Pressable>
-                )}
-              />
-            ) : (
-              <NoData />
-            )}
-          </Container>
-        )}
+        <Container
+          style={styles.main}
+          {...(Platform.isTV && {
+            autoFocus: true,
+            trapFocusLeft: true,
+            trapFocusRight: true,
+          })}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerText}>Continue watching</Text>
+            <SyncButton onPress={getEpisodes} syncing={syncing} preferFocus />
+          </View>
+          <View style={styles.info}>
+            <Image
+              source={{ uri: serie?.image ?? "" }}
+              style={styles.poster}
+              contentFit="cover"
+              cachePolicy="disk"
+              transition={0}
+            />
+
+            <Text style={styles.infoText}>{serie?.name}</Text>
+          </View>
+          <FlashList
+            data={episodes}
+            keyExtractor={(item) => String(item.episodeId)}
+            contentContainerStyle={styles.content}
+            renderItem={renderItem}
+            ListEmptyComponent={<NoData />}
+          />
+        </Container>
       </SafeAreaView>
     </>
   );
@@ -229,7 +231,9 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    alignItems: "center",
   },
   text: {
     fontSize: 18,
@@ -276,5 +280,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e5e5e5",
     paddingBottom: 12,
+  },
+  poster: {
+    width: 150,
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+    backgroundColor: "#1e1e1e",
+    objectFit: "contain",
+  },
+  info: {
+    gap: 6,
+    flexDirection: "row",
+  },
+  infoText: {
+    color: "#1e1e1e",
+    fontSize: 16,
+    flex: 1,
+    fontWeight: "600",
+  },
+  headerText: {
+    color: "#1e1e1e",
+    fontSize: 18,
+    flex: 1,
+    fontWeight: "600",
   },
 });

@@ -1,160 +1,75 @@
-import { Category, CategoryRow } from "@/components/CategoryRow";
+import { AppHeader } from "@/components/AppHeader";
+import { CategoryRow } from "@/components/CategoryRow";
 import { NoData } from "@/components/NoData";
-import { ScreenFade } from "@/components/ScreenFade";
 import { SyncButton } from "@/components/SyncButton";
+import TabItem from "@/components/TabItem";
 import { useBackToTabs } from "@/hook/useBackToTabs";
 import useCategories from "@/hook/useCategories";
-import { useAccountStore } from "@/store/account";
+import { useCategorySync } from "@/hook/useCategorySync";
 import { useFocusStore } from "@/store/focus";
-import { useSyncStore } from "@/store/sync";
-import { useToastStore } from "@/store/toast";
-import { logger } from "@/utils/logger";
-import { eq } from "drizzle-orm";
-import { useState } from "react";
+import { CatalogType } from "@/store/sync";
+import { useSyncQueue } from "@/store/syncQueue";
+import { MEDIA, MEDIA_ENTRIES } from "@/types/mediaType";
+import { FlashList } from "@shopify/flash-list";
+import { useCallback, useState } from "react";
 import {
-  FlatList,
+  findNodeHandle,
   Platform,
   StyleSheet,
   TVFocusGuideView,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { db } from "../../../db";
-import { categories, tv } from "../../../db/schema";
 
-type tvSchema = typeof tv.$inferInsert;
+export default function SyncCategories() {
+  const [type, setType] = useState<CatalogType>("live");
+  const setTabsHandle = useFocusStore((s) => s.setTabsHandle);
+  const setTabsHasFocus = useFocusStore((s) => s.setTabsHasFocus);
 
-export default function LiveCategories() {
-  const liveCategories = useCategories("live");
   const tabsHandle = useFocusStore((s) => s.tabsHandle);
 
-  const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set());
-  const [syncing, setSyncing] = useState(false);
+  const taskSyncing = useSyncQueue((s) => s.running);
+  const { data, setHidden } = useCategories(type);
 
-  const xtreamClient = useAccountStore((state) => state.client);
-
-  const bumpContent = useSyncStore((state) => state.bumpContent);
-  const bumpCategories = useSyncStore((state) => state.bumpCategories);
-
-  const toastShow = useToastStore((state) => state.show);
-
-  const fetchAndInsert = async (item: Category) => {
-    if (!xtreamClient || loadingIds.has(item.categoryId)) return;
-
-    const catId = String(item.categoryId);
-
-    setLoadingIds((prev) => new Set(prev).add(item.categoryId));
-
-    try {
-      const live = await xtreamClient.getLiveStreams(catId);
-
-      await db.transaction(async (tx) => {
-        await tx.delete(tv).where(eq(tv.categoryId, item.categoryId));
-
-        if (live?.length) {
-          const data: tvSchema[] = live.map((l) => ({
-            tvId: l.stream_id,
-            name: l.name,
-            image: l.stream_icon,
-            categoryId: item.categoryId,
-          }));
-
-          await tx.insert(tv).values(data);
-        }
-      });
-
-      toastShow(
-        `Sync completed successfully. live - ${item.categoryId}`,
-        "success",
-      );
-    } catch (e) {
-      toastShow(`Failed to fetch/insert live - ${item.categoryId}`, "error");
-
-      logger.error("Failed to fetch/insert", item.categoryId, e);
-    } finally {
-      setLoadingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(item.categoryId);
-        return next;
-      });
-    }
-  };
-
-  const onHidden = async (item: Category) => {
-    const wasHidden = item.hidden;
-
-    liveCategories.setHidden(item.categoryId, !wasHidden);
-
-    await db
-      .update(categories)
-      .set({ hidden: !wasHidden })
-      .where(eq(categories.categoryId, item.categoryId));
-
-    if (wasHidden) {
-      await fetchAndInsert(item);
-      bumpContent("live");
-      bumpCategories("live");
-    }
-  };
-
-  const onRefreshItem = async (item: Category) => {
-    await fetchAndInsert(item);
-    bumpContent("live");
-  };
-
-  const syncCategories = async () => {
-    const client = useAccountStore.getState().client;
-
-    if (!client || syncing) return;
-
-    setSyncing(true);
-    try {
-      const catg = await client.getLiveCategories();
-
-      await db.transaction(async (tx) => {
-        await tx.delete(categories).where(eq(categories.type, "live"));
-
-        if (catg?.length) {
-          const data = catg.map((c) => ({
-            categoryId: Number(c.category_id),
-            name: c.category_name,
-            type: "live" as const,
-          }));
-
-          await tx.insert(categories).values(data);
-        }
-      });
-
-      bumpCategories("live");
-
-      toastShow("Sync completed successfully. live", "success");
-    } catch (e) {
-      toastShow("Failed to fetch/insert live", "error");
-
-      logger.error("Failed to fetch/insert live", e);
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const { onRowPress, onRowLongPress, syncCategories } = useCategorySync(
+    type,
+    setHidden,
+  );
 
   const Container = Platform.isTV ? TVFocusGuideView : View;
 
-  const onRowPress = (item: Category) => {
-    if (item.hidden) {
-      onHidden(item);
-    } else {
-      onRefreshItem(item);
-    }
-  };
+  const onTabsRef = useCallback(
+    (node: View | null) => {
+      setTabsHandle(node ? findNodeHandle(node) : null);
+    },
+    [setTabsHandle],
+  );
 
   useBackToTabs();
 
   return (
-    <ScreenFade>
+    <>
+      <AppHeader title={"Sync"} />
       <SafeAreaView
         edges={["bottom", "left", "right"]}
         style={styles.container}
       >
+        <View style={styles.tabs} ref={onTabsRef}>
+          {MEDIA_ENTRIES.map(([tabKey, tabValue]) => {
+            return (
+              <TabItem
+                key={tabKey}
+                label={tabValue.label}
+                isActive={tabKey === type}
+                hasTVPreferredFocus={tabKey === type}
+                onFocus={() => setTabsHasFocus(true)}
+                onBlur={() => setTabsHasFocus(false)}
+                onPress={() => setType(tabKey)}
+                disabled={taskSyncing.size > 0}
+              />
+            );
+          })}
+        </View>
         <Container
           style={styles.main}
           {...(Platform.isTV && {
@@ -167,36 +82,31 @@ export default function LiveCategories() {
             <SyncButton
               label="Sync"
               onPress={syncCategories}
-              syncing={syncing}
+              syncing={taskSyncing.has(`${type}:cats`)}
               preferFocus
               nextFocusUp={tabsHandle ?? undefined}
             />
           </View>
-          {liveCategories.data.length > 0 ? (
-            <FlatList
-              data={liveCategories.data}
-              keyExtractor={(item) => String(item.categoryId)}
-              renderItem={({ item, index }) => (
-                <CategoryRow
-                  item={item}
-                  onPress={onRowPress}
-                  loading={loadingIds.has(item.categoryId)}
-                  nextFocusUp={
-                    index === 0 ? (tabsHandle ?? undefined) : undefined
-                  }
-                />
-              )}
-              initialNumToRender={10}
-              maxToRenderPerBatch={8}
-              windowSize={5}
-              removeClippedSubviews={Platform.isTV}
-            />
-          ) : (
-            <NoData />
-          )}
+          <FlashList
+            data={data}
+            keyExtractor={(item) => String(item.categoryId)}
+            renderItem={({ item, index }) => (
+              <CategoryRow
+                item={item}
+                onPress={onRowPress}
+                onLongPress={onRowLongPress}
+                nextFocusUp={
+                  index === 0 ? (tabsHandle ?? undefined) : undefined
+                }
+              />
+            )}
+            maxItemsInRecyclePool={10}
+            ListEmptyComponent={<NoData />}
+            onEndReachedThreshold={0.5}
+          />
         </Container>
       </SafeAreaView>
-    </ScreenFade>
+    </>
   );
 }
 
@@ -213,5 +123,17 @@ const styles = StyleSheet.create({
     padding: 8,
     flex: 1,
     backgroundColor: "#fff",
+  },
+  tabsContent: {
+    padding: 8,
+    backgroundColor: "#fff",
+  },
+  tabs: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 4,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 12,
+    marginBottom: 8,
   },
 });

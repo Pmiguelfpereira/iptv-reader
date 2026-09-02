@@ -1,3 +1,4 @@
+import AntDesign from "@react-native-vector-icons/ant-design/static";
 import { StyleSheet, Text, View, ViewStyle } from "react-native";
 
 export function NoData({
@@ -9,6 +10,7 @@ export function NoData({
 }) {
   return (
     <View style={[styles.noData, style]}>
+      <AntDesign name="meh" size={48} color="#8a8a8a" />
       <Text style={styles.noDataText}>{message}</Text>
     </View>
   );
@@ -20,6 +22,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
+    gap: 12,
   },
   noDataText: {
     color: "#8a8a8a",

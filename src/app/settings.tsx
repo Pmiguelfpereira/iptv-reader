@@ -33,8 +33,6 @@ export default function Settings() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const hydrated = useAccountStore((state) => state.hydrated);
-
   const accountStored = useAccountStore((s) => s.account);
 
   const setAccount = useAccountStore((state) => state.setAccount);
@@ -108,7 +106,6 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    if (!hydrated) return;
     setUrl(accountStored?.url ?? process.env.EXPO_PUBLIC_XTREAM_URL ?? "");
     setUsername(
       accountStored?.username ?? process.env.EXPO_PUBLIC_XTREAM_USERNAME ?? "",
@@ -116,7 +113,7 @@ export default function Settings() {
     setPassword(
       accountStored?.password ?? process.env.EXPO_PUBLIC_XTREAM_PASSWORD ?? "",
     );
-  }, [hydrated, accountStored]);
+  }, [accountStored]);
 
   return (
     <ScreenFade>
@@ -168,7 +165,7 @@ export default function Settings() {
 
         <Pressable
           onPress={handleSave}
-          disabled={!canSave || saving || !hydrated}
+          disabled={!canSave || saving}
           style={({ pressed }) => [
             styles.button,
             { opacity: !canSave || saving ? 0.4 : pressed ? 0.85 : 1 },

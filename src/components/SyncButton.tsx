@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 export function SyncButton({
-  label = "Sincronizar tudo",
+  label,
   onPress,
   syncing = false,
   preferFocus = false,
@@ -47,12 +47,14 @@ export function SyncButton({
               color={focused ? "#4f9dff" : "#000"}
             />
           )}
-          <Text
-            style={[styles.label, focused && styles.labelActive]}
-            numberOfLines={1}
-          >
-            {label}
-          </Text>
+          {label && (
+            <Text
+              style={[styles.label, focused && styles.labelActive]}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+          )}
         </>
       )}
     </Pressable>

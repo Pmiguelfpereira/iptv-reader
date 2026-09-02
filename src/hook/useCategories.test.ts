@@ -131,8 +131,8 @@ describe("useCategories", () => {
     expect(pending).toHaveLength(2);
 
     await act(async () => {
-      pending[1](MOVIE); // query atual
-      pending[0](LIVE); // query cancelada, a chegar tarde
+      pending[1](MOVIE);
+      pending[0](LIVE);
     });
 
     expect(result.current.data).toEqual(MOVIE);

@@ -28,13 +28,11 @@ function mockWindowWidth(width: number) {
     .mockReturnValue({ width, height: 800, scale: 2, fontScale: 1 });
 }
 
-// A raiz é a View que mede a área disponível; a lista só aparece depois do layout.
+// A raiz é a View que ocupa a área disponível — na TV é o guia de foco.
 const area = () => screen.root as TestInstance;
 
-const layout = (height: number) =>
-  fireEvent(area(), "layout", {
-    nativeEvent: { layout: { x: 0, y: 0, width: 400, height } },
-  });
+// A FlashList envolve o scroll view numa View própria, o primeiro descendente da raiz.
+const list = () => allOfType("View")[0];
 
 function allOfType(type: string): TestInstance[] {
   return screen.root?.queryAll((node) => node.type === type) ?? [];
@@ -60,61 +58,45 @@ afterEach(() => {
 });
 
 describe("MediaGrid", () => {
-  it("não renderiza a lista antes de conhecer a altura da área", async () => {
+  it("renderiza os itens assim que monta", async () => {
     await setup();
-
-    expect(screen.queryByTestId("card-1")).not.toBeOnTheScreen();
-  });
-
-  it("renderiza os itens depois do layout", async () => {
-    await setup();
-
-    await layout(600);
 
     expect(screen.getByTestId("card-1")).toBeOnTheScreen();
     expect(screen.getByText("Matrix")).toBeOnTheScreen();
     expect(screen.getByText("Alien")).toBeOnTheScreen();
   });
 
-  it("limita a lista à altura medida", async () => {
+  it("estica a lista por toda a área disponível", async () => {
     await setup();
 
-    await layout(600);
-
-    expect(allOfType("RCTScrollView")[0]).toHaveStyle({ height: 600 });
+    expect(area()).toHaveStyle({ flex: 1 });
+    expect(list()).toHaveStyle({ flex: 1, overflow: "hidden" });
   });
 
   it("distribui a largura da janela pelas colunas que couberem", async () => {
-    // 400 - 8*2 = 384 → 3 colunas de 110; (384 - 12*2) / 3 = 120
+    // 400 - 8*2 = 384 → 3 colunas de 110; (384 - 20*2) / 3 = 114,67
     await setup({ width: 400 });
 
-    await layout(600);
-
-    expect(cardWidth("1")).toBe(120);
+    expect(cardWidth("1")).toBeCloseTo(344 / 3);
   });
 
   it("usa menos colunas numa janela estreita", async () => {
-    // 240 - 8*2 = 224 → 2 colunas; (224 - 12) / 2 = 106
+    // 240 - 8*2 = 224 → 2 colunas; (224 - 20) / 2 = 102
     await setup({ width: 240 });
 
-    await layout(600);
-
-    expect(cardWidth("1")).toBe(106);
+    expect(cardWidth("1")).toBe(102);
   });
 
   it("nunca desce abaixo de 2 colunas", async () => {
-    // 120 - 8*2 = 104, nem cabe uma coluna de 110; (104 - 12) / 2 = 46
+    // 120 - 8*2 = 104, nem cabe uma coluna de 110; (104 - 20) / 2 = 42
     await setup({ width: 120 });
 
-    await layout(600);
-
-    expect(cardWidth("1")).toBe(46);
+    expect(cardWidth("1")).toBe(42);
   });
 
   it("chama onPressItem com o item premido", async () => {
     const { onPressItem } = await setup();
 
-    await layout(600);
     await fireEvent.press(screen.getByTestId("card-2"));
 
     expect(onPressItem).toHaveBeenCalledTimes(1);
@@ -125,8 +107,6 @@ describe("MediaGrid", () => {
     mockWindowWidth(400);
     await render(<MediaGrid data={MEDIA} />);
 
-    await layout(600);
-
     await expect(
       fireEvent.press(screen.getByTestId("card-1")),
     ).resolves.not.toThrow();
@@ -135,21 +115,24 @@ describe("MediaGrid", () => {
   it("não renderiza itens quando não há dados", async () => {
     await setup({ data: [] });
 
-    await layout(600);
-
     expect(allOfType("RCTScrollView")).toHaveLength(1);
     expect(screen.queryByTestId("card-1")).not.toBeOnTheScreen();
+  });
+
+  it("no telemóvel não embrulha a lista num guia de foco", async () => {
+    await setup();
+
+    expect(area().props.autoFocus).toBeUndefined();
   });
 
   it("na TV embrulha a lista num guia de foco com autoFocus", async () => {
     jest.spyOn(Platform, "isTV", "get").mockReturnValue(true);
 
     await setup();
-    await layout(600);
 
-    const guides = area().queryAll((node) => node.props?.autoFocus === true);
-    expect(guides).not.toHaveLength(0);
-    expect(guides[0]).toHaveStyle({ height: 600 });
+    // O TVFocusGuideView é a própria raiz, por isso não aparece em `queryAll`.
+    expect(area().props.autoFocus).toBe(true);
+    expect(area()).toHaveStyle({ flex: 1 });
     expect(screen.getByTestId("card-1")).toBeOnTheScreen();
   });
 });

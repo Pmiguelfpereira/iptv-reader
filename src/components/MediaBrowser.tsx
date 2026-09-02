@@ -12,6 +12,7 @@ export type MediaBrowserProps = {
   onChange: (value: string | null) => void;
   media: MediaItem[];
   onPressItem: (item: MediaItem) => void;
+  onEndReached?: () => void;
   placeholder?: string;
   useSelect?: boolean;
   useList?: boolean;
@@ -26,6 +27,7 @@ export default function MediaBrowser({
   placeholder = "Categories",
   useSelect = false,
   useList = false,
+  onEndReached,
 }: MediaBrowserProps) {
   const Container = Platform.isTV ? TVFocusGuideView : View;
 
@@ -43,9 +45,17 @@ export default function MediaBrowser({
       <View style={{ flex: 1 }}>
         {media.length > 0 ? (
           useList ? (
-            <MediaList data={media} onPressItem={onPressItem} />
+            <MediaList
+              data={media}
+              onPressItem={onPressItem}
+              onEndReached={onEndReached}
+            />
           ) : (
-            <MediaGrid data={media} onPressItem={onPressItem} />
+            <MediaGrid
+              data={media}
+              onPressItem={onPressItem}
+              onEndReached={onEndReached}
+            />
           )
         ) : (
           <NoData />

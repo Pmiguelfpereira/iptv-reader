@@ -1,5 +1,4 @@
 import { IconButton } from "@/components/IconButton";
-import { router } from "expo-router";
 import {
   Platform,
   StyleSheet,
@@ -11,7 +10,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const Container = Platform.isTV ? TVFocusGuideView : View;
 
-export function AppHeader({ title }: { title?: string }) {
+export function AppHeader({
+  title,
+  onSearch,
+}: {
+  title?: string;
+  onSearch?: () => void;
+}) {
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
       <Container
@@ -23,14 +28,6 @@ export function AppHeader({ title }: { title?: string }) {
         })}
       >
         <View style={styles.left}>
-          <IconButton
-            name="left"
-            accessibilityLabel="Back"
-            onPress={() => {
-              if (router.canGoBack()) router.back();
-              else router.replace("/");
-            }}
-          />
           <Text style={styles.title}>{title}</Text>
         </View>
 
@@ -45,6 +42,13 @@ export function AppHeader({ title }: { title?: string }) {
             accessibilityLabel="Settings"
             href="/settings"
           />
+          {onSearch && (
+            <IconButton
+              name="search"
+              onPress={onSearch}
+              accessibilityLabel="Search"
+            />
+          )}
         </View>
       </Container>
     </SafeAreaView>

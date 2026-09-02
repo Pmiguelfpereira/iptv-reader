@@ -9,11 +9,10 @@ export function useBackToTabs() {
       if (!Platform.isTV) return;
 
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-        const { tabsHasFocus, focusTabs } = useFocusStore.getState();
+        const { tabsHasFocus } = useFocusStore.getState();
 
         if (tabsHasFocus) return false;
 
-        focusTabs();
         return true;
       });
 

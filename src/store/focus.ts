@@ -6,9 +6,6 @@ type FocusState = {
 
   tabsHasFocus: boolean;
   setTabsHasFocus: (value: boolean) => void;
-
-  focusTabsNonce: number;
-  focusTabs: () => void;
 };
 
 export const useFocusStore = create<FocusState>((set) => ({
@@ -17,7 +14,4 @@ export const useFocusStore = create<FocusState>((set) => ({
 
   tabsHasFocus: false,
   setTabsHasFocus: (tabsHasFocus) => set({ tabsHasFocus }),
-
-  focusTabsNonce: 0,
-  focusTabs: () => set((s) => ({ focusTabsNonce: s.focusTabsNonce + 1 })),
 }));

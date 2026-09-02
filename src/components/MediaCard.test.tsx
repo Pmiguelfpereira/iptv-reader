@@ -21,9 +21,12 @@ function allOfType(type: string): TestInstance[] {
   return screen.root?.queryAll((node) => node.type === type) ?? [];
 }
 
+// O `expo-image` monta-se como uma view nativa própria, não como o `Image` da RN.
+const IMAGE_TYPE = "ViewManagerAdapter_ExpoImage";
+
 // A raiz é a View do Pressable; dentro dela vêm o wrapper do poster e o título.
 const card = () => screen.root as TestInstance;
-const poster = () => allOfType("Image")[0];
+const poster = () => allOfType(IMAGE_TYPE)[0];
 
 describe("MediaCard", () => {
   it("mostra o título", async () => {
@@ -35,14 +38,14 @@ describe("MediaCard", () => {
   it("mostra o poster quando existe uri", async () => {
     await setup();
 
-    expect(poster().props.source).toEqual({ uri: ITEM.poster });
-    expect(poster().props.resizeMode).toBe("cover");
+    expect(poster().props.source).toEqual([{ uri: ITEM.poster }]);
+    expect(poster().props.contentFit).toBe("cover");
   });
 
   it("mostra um placeholder quando não há poster", async () => {
     await setup({ ...ITEM, poster: null });
 
-    expect(allOfType("Image")).toHaveLength(0);
+    expect(allOfType(IMAGE_TYPE)).toHaveLength(0);
 
     // [0] é o wrapper do poster, [1] o placeholder que substitui a imagem
     const placeholder = allOfType("View")[1];

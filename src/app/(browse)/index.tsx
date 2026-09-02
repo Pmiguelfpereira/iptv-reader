@@ -1,119 +1,137 @@
+import { AppHeader } from "@/components/AppHeader";
 import MediaBrowser from "@/components/MediaBrowser";
 import { MediaItem } from "@/components/MediaCard";
-import { ScreenFade } from "@/components/ScreenFade";
-import { SelectOption } from "@/components/Select";
+import { SearchBar } from "@/components/SearchBar";
+import TabItem from "@/components/TabItem";
 import { useBackToTabs } from "@/hook/useBackToTabs";
+import { useCategoryOptions } from "@/hook/useCategoryOptions";
+import { useContentPaged } from "@/hook/useContent";
+import { useDebounced } from "@/hook/useDebouncedt";
 import { usePlayInVlc } from "@/hook/usePlayInVlc";
 import { useAccountStore } from "@/store/account";
-import { useSyncStore } from "@/store/sync";
-import { and, eq } from "drizzle-orm";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useFocusStore } from "@/store/focus";
+import { CatalogType } from "@/store/sync";
+import { MEDIA_ENTRIES } from "@/types/mediaType";
+import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  findNodeHandle,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { db } from "../../../db";
-import { categories, tv } from "../../../db/schema";
 
-export default function LiveScreen() {
+export default function LiveVODSeriesScreen() {
+  const [type, setType] = useState<CatalogType>("live");
   const [category, setCategory] = useState<string | null>(null);
-  const [options, setOptions] = useState<SelectOption[]>([]);
-  const [mediaItem, setMediaItem] = useState<MediaItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const debouncedSearch = useDebounced(searchText, 350);
 
-  const xtreamClient = useAccountStore((state) => state.client);
+  const setTabsHandle = useFocusStore((s) => s.setTabsHandle);
+  const setTabsHasFocus = useFocusStore((s) => s.setTabsHasFocus);
 
-  const categoryVersions = useSyncStore((s) => s.categoryVersions["live"]);
-  const contentVersions = useSyncStore((s) => s.contentVersions["live"]);
+  const options = useCategoryOptions(type);
 
-  const playInVlc = usePlayInVlc();
+  const effectiveCategory = category ?? options[0]?.value ?? null;
 
-  const handlePressItem = useCallback(
-    (item: MediaItem) => {
-      if (!xtreamClient) return;
-      playInVlc(xtreamClient.liveUrl(Number(item.id)), item.title);
-    },
-    [xtreamClient, playInVlc],
+  const { items, loadMore, loading } = useContentPaged(
+    type,
+    effectiveCategory,
+    searching ? debouncedSearch : undefined,
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    db.select()
-      .from(categories)
-      .where(and(eq(categories.type, "live"), eq(categories.hidden, false)))
-      .then(
-        (r) =>
-          !cancelled &&
-          setOptions(
-            (r ?? []).map((c) => ({
-              label: c.name,
-              value: String(c.categoryId),
-            })),
-          ),
-      );
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryVersions]);
+  const client = useAccountStore((s) => s.client);
+  const playInVlc = usePlayInVlc();
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    db.select({
-      tvId: tv.tvId,
-      name: tv.name,
-      image: tv.image,
-    })
-      .from(tv)
-      .innerJoin(categories, eq(tv.categoryId, categories.categoryId))
-      .where(
-        category
-          ? and(
-              eq(categories.type, "live"),
-              eq(categories.categoryId, Number(category)),
-              eq(categories.hidden, false),
-            )
-          : and(eq(categories.type, "live"), eq(categories.hidden, false)),
-      )
-      .then((r) => {
-        if (cancelled) return;
-        setMediaItem(
-          r.map((item) => ({
-            id: String(item.tvId),
-            title: item.name,
-            poster: item.image,
-          })),
-        );
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [category, contentVersions]);
+  const onTabsRef = useCallback(
+    (node: View | null) => {
+      setTabsHandle(node ? findNodeHandle(node) : null);
+    },
+    [setTabsHandle],
+  );
+
+  const onPressItem = useCallback(
+    (item: MediaItem) => {
+      if (type === "series") {
+        router.navigate({ pathname: "/serie/[id]", params: { id: item.id } });
+        return;
+      }
+
+      if (!client) return;
+
+      const url =
+        type === "movie"
+          ? client.vodUrl(Number(item.id), item.ext ?? "")
+          : client.liveUrl(Number(item.id));
+
+      playInVlc(url, item.title);
+    },
+    [type, client, playInVlc],
+  );
+  const openSearch = () => {
+    setSearching(true);
+    setSearchText("");
+  };
+  const closeSearch = () => {
+    setSearching(false);
+    setSearchText("");
+  };
+  const activeTab = MEDIA_ENTRIES.find((m) => m[0] === type);
 
   useBackToTabs();
 
   return (
-    <ScreenFade>
+    <>
+      <AppHeader title={activeTab?.[1].label} onSearch={openSearch} />
       <SafeAreaView
         style={styles.container}
         edges={["bottom", "left", "right"]}
       >
+        <View style={styles.tabs} ref={onTabsRef}>
+          {MEDIA_ENTRIES.map(([tabKey, tabValue]) => {
+            return (
+              <TabItem
+                key={tabKey}
+                label={tabValue.label}
+                isActive={tabKey === type}
+                hasTVPreferredFocus={tabKey === type}
+                onFocus={() => setTabsHasFocus(true)}
+                onBlur={() => setTabsHasFocus(false)}
+                onPress={() => {
+                  setType(tabKey);
+                  setCategory(null);
+                }}
+              />
+            );
+          })}
+        </View>
+        {searching ? (
+          <SearchBar
+            value={searchText}
+            onChange={setSearchText}
+            onClose={closeSearch}
+          />
+        ) : null}
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator />
+            <ActivityIndicator size={30} />
           </View>
         ) : (
           <MediaBrowser
             options={options}
             value={category}
             onChange={setCategory}
-            media={mediaItem}
-            onPressItem={handlePressItem}
-            useList={true}
-            useSelect={true}
+            media={items}
+            onPressItem={onPressItem}
+            onEndReached={loadMore}
+            useList={!activeTab?.[1].hasImage}
+            useSelect={!searching}
           />
         )}
       </SafeAreaView>
-    </ScreenFade>
+    </>
   );
 }
 
@@ -127,5 +145,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  tabsContent: {
+    padding: 8,
+    backgroundColor: "#fff",
+  },
+  tabs: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 4,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 12,
+    marginBottom: 8,
   },
 });

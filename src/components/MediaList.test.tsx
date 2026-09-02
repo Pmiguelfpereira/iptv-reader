@@ -21,8 +21,22 @@ function allOfType(type: string): TestInstance[] {
   return screen.root?.queryAll((node) => node.type === type) ?? [];
 }
 
+// A FlashList não põe a altura no scroll view: envolve-o numa View própria,
+// que é o primeiro descendente da área medida.
+const list = () => allOfType("View")[0];
+
 // A linha é a View que envolve o id e o título de cada item.
 const row = (title: string) => screen.getByText(title).parent as TestInstance;
+
+// A célula é a View com que a FlashList embrulha cada linha e o seu separador.
+const cell = (title: string) => row(title).parent as TestInstance;
+
+// O separador é uma View de 1px que a FlashList insere a seguir à linha.
+const separatorOf = (title: string) =>
+  cell(title).children.filter(
+    (child): child is TestInstance =>
+      typeof child !== "string" && child !== row(title),
+  );
 
 async function setup({ data = MEDIA }: { data?: MediaItem[] } = {}) {
   const onPressItem = jest.fn();
@@ -45,7 +59,7 @@ describe("MediaList", () => {
   it("arranca sem altura enquanto não houver layout", async () => {
     await setup();
 
-    expect(allOfType("RCTScrollView")[0]).toHaveStyle({ height: 0 });
+    expect(list()).toHaveStyle({ height: 0 });
   });
 
   it("limita a lista à altura medida", async () => {
@@ -53,21 +67,21 @@ describe("MediaList", () => {
 
     await layout(600);
 
-    expect(allOfType("RCTScrollView")[0]).toHaveStyle({ height: 600 });
+    expect(list()).toHaveStyle({ height: 600 });
   });
 
   it("separa todos os itens menos o último", async () => {
     await setup();
 
-    expect(row("Matrix")).toHaveStyle({ borderBottomWidth: 1 });
-    expect(row("Alien")).toHaveStyle({ borderBottomWidth: 1 });
-    expect(row("Dune")).not.toHaveStyle({ borderBottomWidth: 1 });
+    expect(separatorOf("Matrix")[0]).toHaveStyle({ height: 1 });
+    expect(separatorOf("Alien")[0]).toHaveStyle({ height: 1 });
+    expect(separatorOf("Dune")).toHaveLength(0);
   });
 
   it("não separa nada quando só há um item", async () => {
     await setup({ data: [MEDIA[0]] });
 
-    expect(row("Matrix")).not.toHaveStyle({ borderBottomWidth: 1 });
+    expect(separatorOf("Matrix")).toHaveLength(0);
   });
 
   it("chama onPressItem com o item premido", async () => {
