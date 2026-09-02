@@ -24,18 +24,18 @@ Liga-se a um servidor **Xtream Codes**, sincroniza o catálogo (TV, Filmes e Sé
 
 ## Stack
 
-| Área          | Tecnologia                                          |
-| ------------- | --------------------------------------------------- |
-| Runtime       | Expo SDK 57, React 19.2, `react-native-tvos` 0.86   |
-| Navegação     | `expo-router` (rotas tipadas)                       |
-| Base de dados | `expo-sqlite` + `drizzle-orm` / `drizzle-kit`       |
-| Estado        | `zustand`                                           |
-| Listas        | `@shopify/flash-list`                               |
-| Imagens       | `expo-image` (cache em disco)                       |
-| TV            | `@react-native-tvos/config-tv`, `TVFocusGuideView`  |
-| Player        | VLC via `expo-intent-launcher`                      |
-| Linguagem     | TypeScript (`strict`)                               |
-| Testes        | Jest (`jest-expo`) + `@testing-library/react-native`|
+| Área          | Tecnologia                                           |
+| ------------- | ---------------------------------------------------- |
+| Runtime       | Expo SDK 57, React 19.2, `react-native-tvos` 0.86    |
+| Navegação     | `expo-router` (rotas tipadas)                        |
+| Base de dados | `expo-sqlite` + `drizzle-orm` / `drizzle-kit`        |
+| Estado        | `zustand`                                            |
+| Listas        | `@shopify/flash-list`                                |
+| Imagens       | `expo-image` (cache em disco)                        |
+| TV            | `@react-native-tvos/config-tv`, `TVFocusGuideView`   |
+| Player        | VLC via `expo-intent-launcher`                       |
+| Linguagem     | TypeScript (`strict`)                                |
+| Testes        | Jest (`jest-expo`) + `@testing-library/react-native` |
 
 O **React Compiler** está ativo (`experiments.reactCompiler`) e as **rotas tipadas** também (`experiments.typedRoutes`).
 
@@ -129,16 +129,16 @@ Alias de import: `@/*` → `src/*` e `@/assets/*` → `assets/*` (definidos em [
 
 ## Base de dados
 
-`xtream.db`, aberta em [db/index.ts](db/index.ts) com `PRAGMA foreign_keys = ON`. As migrações correm no arranque através de `useMigrations` em [_layout.tsx](src/app/_layout.tsx) — o splash só desaparece quando terminam.
+`xtream.db`, aberta em [db/index.ts](db/index.ts) com `PRAGMA foreign_keys = ON`. As migrações correm no arranque através de `useMigrations` em [\_layout.tsx](src/app/_layout.tsx) — o splash só desaparece quando terminam.
 
-| Tabela          | Conteúdo                                                              |
-| --------------- | --------------------------------------------------------------------- |
-| `account`       | uma linha: url, username, password, status                            |
-| `categories`    | categorias dos 3 tipos; `unique(category_id, type)`; flag `hidden`    |
-| `tv`            | canais live (`tv_id` único)                                           |
-| `movies`        | filmes (`movie_id` único) + `container_extension`                     |
-| `series`        | séries (`serie_id` único)                                             |
-| `serie_episode` | episódios por série, com temporada, número e flag `watched`           |
+| Tabela          | Conteúdo                                                           |
+| --------------- | ------------------------------------------------------------------ |
+| `account`       | uma linha: url, username, password, status                         |
+| `categories`    | categorias dos 3 tipos; `unique(category_id, type)`; flag `hidden` |
+| `tv`            | canais live (`tv_id` único)                                        |
+| `movies`        | filmes (`movie_id` único) + `container_extension`                  |
+| `series`        | séries (`serie_id` único)                                          |
+| `serie_episode` | episódios por série, com temporada, número e flag `watched`        |
 
 Convenção: `id` é a PK interna autoincrementada, os campos `*Id` são os ids externos da API Xtream.
 
@@ -154,13 +154,13 @@ O SQL é importado no bundle via `babel-plugin-inline-import` e `sourceExts` do 
 
 ## Ecrãs e navegação
 
-| Rota          | Ecrã                                                                        |
-| ------------- | --------------------------------------------------------------------------- |
-| `/`           | Espera a hidratação da conta e redireciona para `/(browse)` ou `/settings`  |
-| `/settings`   | Credenciais Xtream; gravar limpa o catálogo e re-importa categorias         |
-| `/(browse)`   | Tabs TV / Filmes / Séries, seletor de categoria, pesquisa, grid ou lista    |
-| `/(sync)`     | Tabs por tipo, botão de sync global e sync/visibilidade por categoria       |
-| `/serie/[id]` | Poster, sync de episódios e lista com marcação de vistos                    |
+| Rota          | Ecrã                                                                       |
+| ------------- | -------------------------------------------------------------------------- |
+| `/`           | Espera a hidratação da conta e redireciona para `/(browse)` ou `/settings` |
+| `/settings`   | Credenciais Xtream; gravar limpa o catálogo e re-importa categorias        |
+| `/(browse)`   | Tabs TV / Filmes / Séries, seletor de categoria, pesquisa, grid ou lista   |
+| `/(sync)`     | Tabs por tipo, botão de sync global e sync/visibilidade por categoria      |
+| `/serie/[id]` | Poster, sync de episódios e lista com marcação de vistos                   |
 
 Filmes e séries usam **grid** com poster (`MEDIA[...].hasImage`); TV usa **lista** de texto. Ao abrir uma série, o botão _Sync_ puxa `get_series_info` e reescreve os episódios dessa série.
 
@@ -168,13 +168,13 @@ Filmes e séries usam **grid** com poster (`MEDIA[...].hasImage`); TV usa **list
 
 ## Estado global
 
-| Store                                       | Responsabilidade                                                        |
-| ------------------------------------------- | ----------------------------------------------------------------------- |
-| [account.ts](src/store/account.ts)          | Conta hidratada da BD + instância do `XtreamClient`                     |
-| [sync.ts](src/store/sync.ts)                | Contadores de versão por tipo, usados para invalidar os hooks de leitura|
-| [syncQueue.ts](src/store/syncQueue.ts)      | Fila com concorrência 2 e deduplicação por chave; expõe `running`       |
-| [focus.ts](src/store/focus.ts)              | Handle e estado de foco da barra de tabs (navegação D-pad)              |
-| [toast.ts](src/store/toast.ts)              | Toast único, renderizado pelo `ToastHost` no layout raiz                |
+| Store                                  | Responsabilidade                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| [account.ts](src/store/account.ts)     | Conta hidratada da BD + instância do `XtreamClient`                      |
+| [sync.ts](src/store/sync.ts)           | Contadores de versão por tipo, usados para invalidar os hooks de leitura |
+| [syncQueue.ts](src/store/syncQueue.ts) | Fila com concorrência 2                                                  |
+| [focus.ts](src/store/focus.ts)         | Handle e estado de foco da barra de tabs (navegação D-pad)               |
+| [toast.ts](src/store/toast.ts)         | Toast único, renderizado pelo `ToastHost` no layout raiz                 |
 
 ---
 
@@ -208,7 +208,3 @@ npm run test:watch
 - Sem EPG, sem gravações, sem continuação de posição — `watched` é apenas um booleano por episódio
 
 ---
-
-## Licença
-
-MIT — ver [LICENSE](LICENSE).
