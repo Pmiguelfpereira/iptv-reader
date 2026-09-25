@@ -38,6 +38,7 @@ Liga-se a um servidor **Xtream Codes**, sincroniza o catálogo (TV, Filmes e Sé
 | Testes        | Jest (`jest-expo`) + `@testing-library/react-native`             |
 
 O **React Compiler** está ativo (`experiments.reactCompiler`) e as **rotas tipadas** também (`experiments.typedRoutes`).
+O **React Compiler** está ativo (`experiments.reactCompiler`) e as **rotas tipadas** também (`experiments.typedRoutes`).
 
 ---
 
@@ -57,12 +58,18 @@ npm install                 # legacy-peer-deps já está no .npmrc
 npm run android             # build nativo + instalação (Android / Android TV)
 npm run ios                 # iOS
 npm start                   # Metro apenas
+npm install                 # legacy-peer-deps já está no .npmrc
+npm run android             # build nativo + instalação (Android / Android TV)
+npm run ios                 # iOS
+npm start                   # Metro apenas
 ```
 
+> O projeto usa módulos nativos e a configuração TV, por isso **não corre no Expo Go** — é preciso um development build (`expo run:*`).
 > O projeto usa módulos nativos e a configuração TV, por isso **não corre no Expo Go** — é preciso um development build (`expo run:*`).
 
 ### Pré-preencher credenciais (opcional)
 
+O ecrã de _Settings_ usa variáveis de ambiente como valores por defeito. Cria um `.env` na raiz:
 O ecrã de _Settings_ usa variáveis de ambiente como valores por defeito. Cria um `.env` na raiz:
 
 ```bash
@@ -71,6 +78,7 @@ EXPO_PUBLIC_XTREAM_USERNAME=utilizador
 EXPO_PUBLIC_XTREAM_PASSWORD=password
 ```
 
+Estas variáveis são **embutidas no bundle** (prefixo `EXPO_PUBLIC_`) — usa-as só em desenvolvimento.
 Estas variáveis são **embutidas no bundle** (prefixo `EXPO_PUBLIC_`) — usa-as só em desenvolvimento.
 
 ---
