@@ -8,6 +8,9 @@ export const account = sqliteTable("account", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   status: text("status"),
+  externalPlayer: integer("externalPlayer", { mode: "boolean" })
+    .notNull()
+    .default(false),
 });
 
 export const categories = sqliteTable(

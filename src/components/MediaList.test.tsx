@@ -9,13 +9,8 @@ const MEDIA: MediaItem[] = [
   { id: "3", title: "Dune", poster: null },
 ];
 
-// A raiz é a View que mede a área disponível; a lista herda essa altura.
+// A raiz é a View que ocupa a área disponível.
 const area = () => screen.root as TestInstance;
-
-const layout = (height: number) =>
-  fireEvent(area(), "layout", {
-    nativeEvent: { layout: { x: 0, y: 0, width: 400, height } },
-  });
 
 function allOfType(type: string): TestInstance[] {
   return screen.root?.queryAll((node) => node.type === type) ?? [];
@@ -40,12 +35,14 @@ const separatorOf = (title: string) =>
 
 async function setup({ data = MEDIA }: { data?: MediaItem[] } = {}) {
   const onPressItem = jest.fn();
-  await render(<MediaList data={data} onPressItem={onPressItem} />);
+  await render(
+    <MediaList data={data} onPressItem={onPressItem} resetKey="all" />,
+  );
   return { onPressItem };
 }
 
 describe("MediaList", () => {
-  it("renderiza o id e o título de cada item", async () => {
+  it("renders the id and title of each item", async () => {
     await setup();
 
     expect(screen.getByText("Matrix")).toBeOnTheScreen();
@@ -56,21 +53,14 @@ describe("MediaList", () => {
     expect(screen.getByText("3")).toBeOnTheScreen();
   });
 
-  it("arranca sem altura enquanto não houver layout", async () => {
+  it("stretches the list over the available area", async () => {
     await setup();
 
-    expect(list()).toHaveStyle({ height: 0 });
+    expect(area()).toHaveStyle({ flex: 1 });
+    expect(list()).toHaveStyle({ flex: 1, overflow: "hidden" });
   });
 
-  it("limita a lista à altura medida", async () => {
-    await setup();
-
-    await layout(600);
-
-    expect(list()).toHaveStyle({ height: 600 });
-  });
-
-  it("separa todos os itens menos o último", async () => {
+  it("separates every item except the last", async () => {
     await setup();
 
     expect(separatorOf("Matrix")[0]).toHaveStyle({ height: 1 });
@@ -78,13 +68,13 @@ describe("MediaList", () => {
     expect(separatorOf("Dune")).toHaveLength(0);
   });
 
-  it("não separa nada quando só há um item", async () => {
+  it("separates nothing when there is only one item", async () => {
     await setup({ data: [MEDIA[0]] });
 
     expect(separatorOf("Matrix")).toHaveLength(0);
   });
 
-  it("chama onPressItem com o item premido", async () => {
+  it("calls onPressItem with the pressed item", async () => {
     const { onPressItem } = await setup();
 
     await fireEvent.press(screen.getByText("Alien"));
@@ -93,18 +83,16 @@ describe("MediaList", () => {
     expect(onPressItem).toHaveBeenCalledWith(MEDIA[1]);
   });
 
-  it("não falha ao premir um item sem onPressItem", async () => {
-    await render(<MediaList data={MEDIA} />);
+  it("does not fail when pressing an item without onPressItem", async () => {
+    await render(<MediaList data={MEDIA} resetKey="all" />);
 
     await expect(
       fireEvent.press(screen.getByText("Matrix")),
     ).resolves.not.toThrow();
   });
 
-  it("não renderiza itens quando não há dados", async () => {
+  it("renders no items when there is no data", async () => {
     await setup({ data: [] });
-
-    await layout(600);
 
     expect(allOfType("RCTScrollView")).toHaveLength(1);
     expect(screen.queryByText("Matrix")).not.toBeOnTheScreen();

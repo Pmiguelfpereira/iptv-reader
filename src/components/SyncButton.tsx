@@ -44,12 +44,15 @@ export function SyncButton({
             <AntDesign
               name="sync"
               size={20}
-              color={focused ? "#4f9dff" : "#000"}
+              color={Platform.isTV && focused ? "#4f9dff" : "#000"}
             />
           )}
           {label && (
             <Text
-              style={[styles.label, focused && styles.labelActive]}
+              style={[
+                styles.label,
+                Platform.isTV && focused && styles.labelActive,
+              ]}
               numberOfLines={1}
             >
               {label}

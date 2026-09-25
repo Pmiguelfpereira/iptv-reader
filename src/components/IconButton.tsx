@@ -1,6 +1,7 @@
 import AntDesign from "@react-native-vector-icons/ant-design/static";
-import { Href, router } from "expo-router";
-import { Pressable } from "react-native";
+import { Href, router, usePathname } from "expo-router";
+import { forwardRef } from "react";
+import { Platform, Pressable, View } from "react-native";
 
 export type IconButtonProps = {
   name: React.ComponentProps<typeof AntDesign>["name"];
@@ -9,16 +10,27 @@ export type IconButtonProps = {
   onPress?: () => void;
   disabled?: boolean;
 };
-export function IconButton({
-  name,
-  accessibilityLabel,
-  href,
-  onPress,
-  disabled = false,
-}: IconButtonProps) {
+
+export const IconButton = forwardRef<View, IconButtonProps>(function IconButton(
+  { name, href, onPress, accessibilityLabel, disabled = false },
+  ref,
+) {
+  const pathname = usePathname();
+
+  const handlePress = () => {
+    if (onPress) return onPress();
+    if (!href) return;
+
+    const target =
+      typeof href === "string" ? href.split("?")[0] : href.pathname;
+    if (target === pathname) return;
+
+    router.navigate(href);
+  };
   return (
     <Pressable
-      onPress={onPress ?? (href ? () => router.navigate(href) : undefined)}
+      ref={ref}
+      onPress={handlePress}
       hitSlop={8}
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
@@ -26,10 +38,10 @@ export function IconButton({
       {({ focused }) => (
         <AntDesign
           name={name}
-          color={focused ? "#4f9dff" : "#1e1e1e"}
+          color={Platform.isTV && focused ? "#4f9dff" : "#1e1e1e"}
           size={25}
         />
       )}
     </Pressable>
   );
-}
+});

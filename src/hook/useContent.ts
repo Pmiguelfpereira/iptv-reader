@@ -91,6 +91,7 @@ export function useContentPaged(
     runId.current++;
     offset.current = 0;
     done.current = false;
+    busy.current = false;
     setItems([]);
     loadMore();
   }, [type, categoryId, q, version]);

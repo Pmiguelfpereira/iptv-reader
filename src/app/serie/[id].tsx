@@ -7,7 +7,7 @@ import { logger } from "@/utils/logger";
 import { playInVlc } from "@/utils/vlc";
 import { FlashList } from "@shopify/flash-list";
 import { eq } from "drizzle-orm";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../../db";
 import { serieEpisode, series } from "../../../db/schema";
 import { Image } from "expo-image";
+import { useExternalPlayer } from "@/hook/useExternalPlayer";
 
 type SerieRow = typeof series.$inferSelect;
 type EpisodeRow = typeof serieEpisode.$inferSelect;
@@ -29,6 +30,8 @@ type EpisodeInsert = typeof serieEpisode.$inferInsert;
 
 export default function Series() {
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  const router = useRouter();
 
   const toastShow = useToastStore((state) => state.show);
 
@@ -41,6 +44,8 @@ export default function Series() {
   const [episodes, setEpisodes] = useState<EpisodeRow[]>([]);
 
   const [loading, setLoading] = useState(true);
+
+  const externalPlayer = useExternalPlayer();
 
   const loadSerie = useCallback(async () => {
     await db
@@ -62,31 +67,41 @@ export default function Series() {
   }, [id]);
 
   const Container = Platform.isTV ? TVFocusGuideView : View;
+  const markWatched = useCallback(async (episodeId: number) => {
+    await db
+      .update(serieEpisode)
+      .set({ watched: true })
+      .where(eq(serieEpisode.episodeId, episodeId));
+    setEpisodes((prev) =>
+      prev.map((e) =>
+        e.episodeId === episodeId ? { ...e, watched: true } : e,
+      ),
+    );
+  }, []);
 
   const onSelect = useCallback(
     async (item: EpisodeRow) => {
-      const source = xtreamClient?.seriesUrl(
+      if (!externalPlayer) {
+        router.push(`/player/series/${item.episodeId}`);
+        markWatched(item.episodeId);
+        return;
+      }
+
+      const url = xtreamClient?.seriesUrl(
         item.episodeId,
         item.containerExtension ?? "",
       );
-      if (!source) return;
+      if (!url) return;
+
       try {
-        await playInVlc(source, item.name ?? "");
-        await db
-          .update(serieEpisode)
-          .set({ watched: true })
-          .where(eq(serieEpisode.episodeId, item.episodeId));
-        setEpisodes((prev) =>
-          prev.map((e) =>
-            e.episodeId === item.episodeId ? { ...e, watched: true } : e,
-          ),
-        );
+        await playInVlc(url, item.name ?? "");
+        await markWatched(item.episodeId);
       } catch (e) {
         logger.error("Error launching VLC", e);
         toastShow("Error launching VLC", "error");
       }
     },
-    [xtreamClient, toastShow],
+    [xtreamClient, playInVlc, toastShow, markWatched],
   );
 
   const getEpisodes = async () => {

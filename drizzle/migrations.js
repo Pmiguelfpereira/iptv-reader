@@ -7,6 +7,8 @@ import m0002 from './0002_great_mattie_franklin.sql';
 import m0003 from './0003_third_human_torch.sql';
 import m0004 from './0004_fancy_beyonder.sql';
 import m0005 from './0005_exotic_redwing.sql';
+import m0006 from './0006_lethal_absorbing_man.sql';
+import m0007 from './0007_nifty_ulik.sql';
 
   export default {
     journal,
@@ -16,7 +18,9 @@ m0001,
 m0002,
 m0003,
 m0004,
-m0005
+m0005,
+m0006,
+m0007
     }
   }
   

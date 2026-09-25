@@ -4,6 +4,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { Platform } from "react-native";
 
 import Select, { SelectOption } from "@/components/Select";
 
@@ -45,6 +46,10 @@ const openSheet = async () => {
 const searchInput = () => screen.getByPlaceholderText("Search...");
 
 describe("Select", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe("field", () => {
     it("shows the default placeholder when nothing is selected", async () => {
       await setup();
@@ -155,11 +160,14 @@ describe("Select", () => {
 
       await fireEvent.changeText(searchInput(), "terror");
 
-      expect(screen.getByText("Sem resultados")).toBeOnTheScreen();
+      expect(screen.getByText("No Results")).toBeOnTheScreen();
       expect(screen.queryByText("Ação")).not.toBeOnTheScreen();
     });
 
-    it("highlights the search icon while the input is focused", async () => {
+    // O destaque de foco só existe em TV — no telefone o rato/toque já dá feedback
+    it("highlights the search icon while the input is focused on TV", async () => {
+      jest.spyOn(Platform, "isTV", "get").mockReturnValue(true);
+
       await setup();
       await openSheet();
 

@@ -1,5 +1,5 @@
 // hook/useCategories.ts
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "../../db";
 import { categories } from "../../db/schema";
@@ -22,6 +22,9 @@ export default function useCategories(
   const [data, setData] = useState<Category[]>([]);
   const version = useSyncStore((s) => s.categoryVersions[type]);
 
+  const [viewSync, setViewSync] = useState(false);
+  const toggleSwitch = () => setViewSync((previousState) => !previousState);
+
   const offset = useRef(0);
   const done = useRef(false);
   const busy = useRef(false);
@@ -32,10 +35,14 @@ export default function useCategories(
       db
         .select()
         .from(categories)
-        .where(eq(categories.type, type))
-        .orderBy(asc(categories.hidden), asc(categories.name)),
-    [type],
+        .where(
+          viewSync
+            ? and(eq(categories.type, type), eq(categories.hidden, false))
+            : eq(categories.type, type),
+        ),
+    [type, viewSync],
   );
+
   const loadMore = useCallback(async () => {
     if (!paged || done.current || busy.current) return;
     busy.current = true;
@@ -70,7 +77,7 @@ export default function useCategories(
         })
         .finally(() => id === runId.current && setLoading(false));
     }
-  }, [type, version, paged, pageSize]);
+  }, [type, version, paged, pageSize, viewSync]);
 
   const setHidden = useCallback((categoryId: number, hidden: boolean) => {
     setData((prev) =>
@@ -78,5 +85,5 @@ export default function useCategories(
     );
   }, []);
 
-  return { data, setHidden, loadMore, loading };
+  return { data, setHidden, loadMore, loading, viewSync, toggleSwitch };
 }

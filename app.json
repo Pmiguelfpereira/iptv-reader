@@ -3,15 +3,18 @@
     "name": "IPTVReader",
     "slug": "IPTVReader",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "iptvreader",
-    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#ffffff",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.anonymous.IPTVReader"
     },
     "android": {
+      "allowBackup": false,
+      "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -56,9 +59,24 @@
       [
         "expo-build-properties",
         {
-          "android": { "usesCleartextTraffic": true }
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
-      ]
+      ],
+      [
+        "react-native-video",
+        {
+          "enableNotificationControls": true,
+          "androidExtensions": {
+            "useExoplayerRtsp": false,
+            "useExoplayerSmoothStreaming": false,
+            "useExoplayerHls": true,
+            "useExoplayerDash": false
+          }
+        }
+      ],
+      ["expo-navigation-bar", { "enforceContrast": false, "style": "light" }]
     ],
     "experiments": {
       "typedRoutes": true,

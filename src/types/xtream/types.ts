@@ -40,6 +40,7 @@ export interface XtreamLiveStream {
   stream_id: number;
   stream_icon: string;
   category_id: string;
+  thumbnail: string;
 }
 
 export interface XtreamVodStream {

@@ -7,23 +7,7 @@ export default function HomeScreen() {
   const account = useAccountStore((state) => state.account);
 
   if (!hydrated) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#000",
-        }}
-      >
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <View style={{ flex: 1, backgroundColor: "#121212" }} />;
   }
-
-  if (hydrated && account) {
-    return <Redirect href="/(browse)" />;
-  }
-
-  return <Redirect href="/settings" />;
+  return <Redirect href={account ? "/(browse)" : "/settings"} />;
 }

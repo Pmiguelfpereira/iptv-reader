@@ -5,9 +5,13 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
+import { Platform } from "react-native";
 
-jest.mock("expo-router", () => ({ router: { navigate: jest.fn() } }));
+jest.mock("expo-router", () => ({
+  router: { navigate: jest.fn() },
+  usePathname: jest.fn(),
+}));
 
 // O ícone real carrega fontes nativas — basta expor as props no árvore renderizada
 jest.mock("@react-native-vector-icons/ant-design/static", () => {
@@ -21,9 +25,15 @@ jest.mock("@react-native-vector-icons/ant-design/static", () => {
 });
 
 const navigateMock = router.navigate as jest.Mock;
+const usePathnameMock = usePathname as jest.Mock;
 
 beforeEach(() => {
   navigateMock.mockClear();
+  usePathnameMock.mockReturnValue("/");
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe("IconButton", () => {
@@ -53,12 +63,28 @@ describe("IconButton", () => {
 
   it("navigates to href when pressed without onPress", async () => {
     await render(
-      <IconButton name="home" accessibilityLabel="Início" href="/categories" />,
+      <IconButton name="home" accessibilityLabel="Início" href="/settings" />,
     );
 
     fireEvent.press(screen.getByLabelText("Início"));
 
-    expect(navigateMock).toHaveBeenCalledWith("/categories");
+    expect(navigateMock).toHaveBeenCalledWith("/settings");
+  });
+
+  it("does not navigate when href matches the current pathname", async () => {
+    usePathnameMock.mockReturnValue("/settings");
+
+    await render(
+      <IconButton
+        name="home"
+        accessibilityLabel="Início"
+        href="/settings?type=live"
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText("Início"));
+
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("prefers onPress over href", async () => {
@@ -67,7 +93,7 @@ describe("IconButton", () => {
       <IconButton
         name="home"
         accessibilityLabel="Início"
-        href="/categories"
+        href="/settings"
         onPress={onPress}
       />,
     );
@@ -116,7 +142,9 @@ describe("IconButton", () => {
     expect(screen.getByTestId("icon")).toHaveProp("color", "#1e1e1e");
   });
 
-  it("uses the highlight color while focused", async () => {
+  it("uses the highlight color while focused on TV", async () => {
+    jest.spyOn(Platform, "isTV", "get").mockReturnValue(true);
+
     await render(<IconButton name="home" accessibilityLabel="Início" />);
 
     fireEvent(screen.getByLabelText("Início"), "focus");
@@ -124,6 +152,16 @@ describe("IconButton", () => {
     // O estado `focused` do Pressable só chega na próxima renderização
     await waitFor(() =>
       expect(screen.getByTestId("icon")).toHaveProp("color", "#4f9dff"),
+    );
+  });
+
+  it("keeps the unfocused color while focused off TV", async () => {
+    await render(<IconButton name="home" accessibilityLabel="Início" />);
+
+    fireEvent(screen.getByLabelText("Início"), "focus");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("icon")).toHaveProp("color", "#1e1e1e"),
     );
   });
 });

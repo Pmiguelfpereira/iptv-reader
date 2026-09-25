@@ -1,4 +1,5 @@
 import { IconButton } from "@/components/IconButton";
+import { Icon } from "expo-router";
 import {
   Platform,
   StyleSheet,
@@ -13,16 +14,17 @@ const Container = Platform.isTV ? TVFocusGuideView : View;
 export function AppHeader({
   title,
   onSearch,
+  searchRef,
 }: {
   title?: string;
   onSearch?: () => void;
+  searchRef?: React.RefObject<View>;
 }) {
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={styles.safe}>
       <Container
         style={styles.header}
         {...(Platform.isTV && {
-          autoFocus: true,
           trapFocusLeft: true,
           trapFocusRight: true,
         })}
@@ -32,6 +34,11 @@ export function AppHeader({
         </View>
 
         <View style={styles.actions}>
+          <IconButton
+            name="play-square"
+            accessibilityLabel="Stream"
+            href={"/(browse)"}
+          />
           <IconButton
             name="cloud-sync"
             accessibilityLabel="Sync"
@@ -47,6 +54,7 @@ export function AppHeader({
               name="search"
               onPress={onSearch}
               accessibilityLabel="Search"
+              ref={searchRef}
             />
           )}
         </View>

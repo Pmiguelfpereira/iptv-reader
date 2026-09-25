@@ -1,0 +1,1 @@
+ALTER TABLE `account` ADD `hidden` integer DEFAULT false NOT NULL;

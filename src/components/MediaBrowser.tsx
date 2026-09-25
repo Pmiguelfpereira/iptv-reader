@@ -16,6 +16,8 @@ export type MediaBrowserProps = {
   placeholder?: string;
   useSelect?: boolean;
   useList?: boolean;
+  loading?: boolean;
+  resetKey: string;
 };
 
 export default function MediaBrowser({
@@ -28,6 +30,8 @@ export default function MediaBrowser({
   useSelect = false,
   useList = false,
   onEndReached,
+  loading = false,
+  resetKey,
 }: MediaBrowserProps) {
   const Container = Platform.isTV ? TVFocusGuideView : View;
 
@@ -46,15 +50,18 @@ export default function MediaBrowser({
         {media.length > 0 ? (
           useList ? (
             <MediaList
+              resetKey={resetKey}
               data={media}
               onPressItem={onPressItem}
               onEndReached={onEndReached}
             />
           ) : (
             <MediaGrid
+              resetKey={resetKey}
               data={media}
               onPressItem={onPressItem}
               onEndReached={onEndReached}
+              loading={loading}
             />
           )
         ) : (

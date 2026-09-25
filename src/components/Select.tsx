@@ -1,10 +1,11 @@
 import AntDesign from "@react-native-vector-icons/ant-design/static";
+import { FlashList } from "@shopify/flash-list";
 import { useMemo, useState } from "react";
 import {
-  FlatList,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -50,7 +51,11 @@ export default function Select({
   return (
     <>
       <Pressable
-        style={({ focused }) => [styles.field, focused && styles.fieldFocused]}
+        style={({ focused }) => [
+          styles.field,
+          Platform.isTV && focused && styles.fieldFocused,
+        ]}
+        hasTVPreferredFocus={Platform.isTV && true}
         onPress={() => setOpen(true)}
       >
         <Text style={[styles.fieldText, !selected && styles.placeholder]}>
@@ -80,7 +85,9 @@ export default function Select({
                   name="search"
                   size={16}
                   color="#8A8A8A"
-                  style={[searchFocused && styles.searchFocused]}
+                  style={[
+                    Platform.isTV && searchFocused && styles.searchFocused,
+                  ]}
                 />
                 <TextInput
                   style={styles.search}
@@ -93,30 +100,23 @@ export default function Select({
                 />
               </View>
             )}
-
-            <FlatList
-              data={filtered}
-              keyExtractor={(item) => item.value}
-              keyboardShouldPersistTaps="handled"
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              removeClippedSubviews={false}
-              initialNumToRender={20}
-              windowSize={11}
-              ListEmptyComponent={
-                <Text style={styles.empty}>Sem resultados</Text>
-              }
-              renderItem={({ item }) => (
-                <OptionRow
-                  option={item}
-                  isActive={item.value === value}
-                  onSelect={() => {
-                    onChange(item.value);
-                    close();
-                  }}
-                />
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {filtered.length === 0 ? (
+                <Text style={styles.empty}>No Results</Text>
+              ) : (
+                filtered.map((item) => (
+                  <OptionRow
+                    key={item.value}
+                    option={item}
+                    isActive={item.value === value}
+                    onSelect={() => {
+                      onChange(item.value);
+                      close();
+                    }}
+                  />
+                ))
               )}
-            />
+            </ScrollView>
           </Container>
         </View>
       </Modal>

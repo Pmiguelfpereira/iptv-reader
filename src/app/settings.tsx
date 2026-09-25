@@ -9,8 +9,10 @@ import { logger } from "@/utils/logger";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -32,6 +34,9 @@ export default function Settings() {
   const [url, setUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [externalPlayer, setExternalPlayer] = useState(false);
+  const toggleSwitch = () =>
+    setExternalPlayer((previousState) => !previousState);
 
   const accountStored = useAccountStore((s) => s.account);
 
@@ -42,6 +47,8 @@ export default function Settings() {
   const toastShow = useToastStore((state) => state.show);
 
   const bumpCategories = useSyncStore.getState().bumpCategories;
+
+  const bumpContent = useSyncStore.getState().bumpContent;
 
   const canSave =
     url.trim() !== "" && username.trim() !== "" && password !== "";
@@ -60,19 +67,22 @@ export default function Settings() {
 
         const [data] = await tx
           .insert(account)
-          .values({ url, username, password })
+          .values({ url, username, password, externalPlayer })
           .returning({
             id: account.id,
             url: account.url,
             username: account.username,
             password: account.password,
             status: account.status,
+            externalPlayer: account.externalPlayer,
           });
 
         return data;
       });
 
-      if (accountData) setAccount(accountData);
+      if (accountData) {
+        setAccount(accountData);
+      }
 
       const client = useAccountStore.getState().client;
       if (!client) return;
@@ -95,6 +105,7 @@ export default function Settings() {
       if (rows.length) {
         await db.insert(categories).values(rows);
       }
+
       toastShow("Sync completed successfully.", "success");
     } catch (err) {
       logger.error("Sync failed", err);
@@ -102,6 +113,7 @@ export default function Settings() {
     } finally {
       setSaving(false);
       (["live", "movie", "series"] as const).forEach(bumpCategories);
+      (["live", "movie", "series"] as const).forEach(bumpContent);
     }
   };
 
@@ -113,11 +125,12 @@ export default function Settings() {
     setPassword(
       accountStored?.password ?? process.env.EXPO_PUBLIC_XTREAM_PASSWORD ?? "",
     );
+    setExternalPlayer(accountStored?.externalPlayer ?? false);
   }, [accountStored]);
 
   return (
-    <ScreenFade>
-      <AppHeader title={"Settings"} />
+    <>
+      <AppHeader title={"Xtream"} />
       <SafeAreaView
         edges={["bottom", "left", "right"]}
         style={styles.container}
@@ -161,6 +174,22 @@ export default function Settings() {
               autoCorrect={false}
             />
           </Field>
+          <Field label="External Player">
+            <Pressable
+              onPress={toggleSwitch}
+              style={({ focused }) => [
+                styles.switch,
+                Platform.isTV && focused && styles.switchWrapFocused,
+              ]}
+            >
+              <Switch
+                value={externalPlayer}
+                onValueChange={toggleSwitch}
+                pointerEvents="none"
+                className=""
+              />
+            </Pressable>
+          </Field>
         </View>
 
         <Pressable
@@ -178,16 +207,16 @@ export default function Settings() {
           )}
         </Pressable>
       </SafeAreaView>
-    </ScreenFade>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 24 },
+  container: { flex: 1, padding: 24, gap: 24, backgroundColor: "#ffffff" },
   form: { gap: 18 },
   input: {
     borderWidth: 1,
-    borderColor: "#f9f9f7",
+    borderColor: "#«",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -204,4 +233,11 @@ const styles = StyleSheet.create({
     marginTop: "auto",
   },
   buttonText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  switch: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  switchWrapFocused: {
+    borderColor: "#4f9dff",
+  },
 });

@@ -1,5 +1,6 @@
 import MediaCard, { MediaItem } from "@/components/MediaCard";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { Platform } from "react-native";
 import type { TestInstance } from "test-renderer";
 
 const ITEM: MediaItem = {
@@ -27,6 +28,15 @@ const IMAGE_TYPE = "ViewManagerAdapter_ExpoImage";
 // A raiz é a View do Pressable; dentro dela vêm o wrapper do poster e o título.
 const card = () => screen.root as TestInstance;
 const poster = () => allOfType(IMAGE_TYPE)[0];
+
+// O realce de foco do poster e do título só existe na TV.
+function mockTV() {
+  jest.spyOn(Platform, "isTV", "get").mockReturnValue(true);
+}
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe("MediaCard", () => {
   it("mostra o título", async () => {
@@ -66,7 +76,16 @@ describe("MediaCard", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it("realça o título e o poster quando ganha foco e reverte no blur", async () => {
+  it("no telemóvel o foco não realça o poster", async () => {
+    await setup();
+
+    await fireEvent(card(), "focus");
+
+    expect(poster()).not.toHaveStyle({ borderColor: "#4f9dff" });
+  });
+
+  it("na TV realça o poster quando ganha foco e reverte no blur", async () => {
+    mockTV();
     await setup();
 
     expect(screen.getByText(ITEM.title)).toHaveStyle({ color: "#000" });

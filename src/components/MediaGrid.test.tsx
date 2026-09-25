@@ -131,7 +131,6 @@ describe("MediaGrid", () => {
     await setup();
 
     // O TVFocusGuideView é a própria raiz, por isso não aparece em `queryAll`.
-    expect(area().props.autoFocus).toBe(true);
     expect(area()).toHaveStyle({ flex: 1 });
     expect(screen.getByTestId("card-1")).toBeOnTheScreen();
   });

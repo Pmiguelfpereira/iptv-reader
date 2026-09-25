@@ -26,7 +26,7 @@ export default function TabItem({
       style={({ focused }) => [
         styles.tab,
         isActive && styles.tabActive,
-        focused && styles.tabFocused,
+        Platform.isTV && focused && styles.tabFocused,
       ]}
       disabled={disabled}
     >

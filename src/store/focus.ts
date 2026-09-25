@@ -1,8 +1,9 @@
+import { View } from "react-native";
 import { create } from "zustand";
 
 type FocusState = {
-  tabsHandle: number | null;
-  setTabsHandle: (handle: number | null) => void;
+  tabsHandle: View | null;
+  setTabsHandle: (handle: View | null) => void;
 
   tabsHasFocus: boolean;
   setTabsHasFocus: (value: boolean) => void;

@@ -3,8 +3,8 @@ import { useAccountStore } from "@/store/account";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { SplashScreen, Stack, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { Platform, Text } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, Text, View, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db } from "../../db";
 import migrations from "../../drizzle/migrations";
@@ -14,27 +14,33 @@ SplashScreen.preventAutoHideAsync();
 export default function Layout() {
   const { success, error } = useMigrations(db, migrations);
   const hydrate = useAccountStore((state) => state.hydrate);
-  const segments = useSegments();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (success || error) {
-      SplashScreen.hideAsync();
-    }
-    if (success) hydrate();
-  }, [success, error]);
+    if (!success && !error) return;
+    (async () => {
+      try {
+        if (success) await hydrate();
+      } catch (e) {
+        console.error("hydrate falhou", e);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, [success, error, hydrate]);
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
 
   if (error) return <Text>Erro na BD: {error.message}</Text>;
-  if (!success) return <Text>A preparar a base de dados…</Text>;
 
   return (
-    <SafeAreaProvider>
+    <>
       <StatusBar style="light" />
 
       <Stack
         screenOptions={{
-          contentStyle: {
-            backgroundColor: "#fff",
-          },
           animation: Platform.isTV ? "none" : "default",
           headerShown: false,
         }}
@@ -48,8 +54,15 @@ export default function Layout() {
           }}
         />
         <Stack.Screen name="(sync)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="player/[type]/[id]"
+          options={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#000" },
+          }}
+        />
       </Stack>
       <ToastHost />
-    </SafeAreaProvider>
+    </>
   );
 }

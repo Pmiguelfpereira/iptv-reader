@@ -19,20 +19,39 @@ const MOVIE: Category[] = [
   { id: 3, categoryId: 20, name: "Ação", type: "movie", hidden: false },
 ];
 
-// eq(categories.type, type) guarda o tipo num Param dos queryChunks
+// A condição pode ser eq(categories.type, type) ou
+// and(eq(type), eq(hidden, false)) quando viewSync está ligado — o tipo fica
+// sempre num Param com valor string, em qualquer nível dos queryChunks.
 function typeOf(condition: unknown): CatalogType | undefined {
-  return (condition as any)?.queryChunks?.find(
-    (c: any) => typeof c?.value === "string",
-  )?.value;
+  const chunks = (condition as any)?.queryChunks;
+  if (!Array.isArray(chunks)) return undefined;
+  for (const chunk of chunks) {
+    if (typeof chunk?.value === "string") return chunk.value as CatalogType;
+    const nested = typeOf(chunk);
+    if (nested) return nested;
+  }
+  return undefined;
 }
 
-// db.select().from().where().orderBy() é thenable — o hook usa .then() diretamente
+// db.select().from().where() é thenable — o hook usa .then() diretamente,
+// ou .limit().offset() quando está em modo paginado.
+function queryBuilder(rows: Promise<Category[]>) {
+  return {
+    then: (onOk?: any, onErr?: any) => rows.then(onOk, onErr),
+    catch: (onErr?: any) => rows.catch(onErr),
+    finally: (onEnd?: any) => rows.finally(onEnd),
+    limit: (limit: number) => ({
+      offset: (offset: number) =>
+        rows.then((r) => r.slice(offset, offset + limit)),
+    }),
+  };
+}
+
 function mockRowsByType(rowsByType: Partial<Record<CatalogType, Category[]>>) {
   selectMock.mockImplementation(() => ({
     from: () => ({
-      where: (condition: unknown) => ({
-        orderBy: () => Promise.resolve(rowsByType[typeOf(condition)!] ?? []),
-      }),
+      where: (condition: unknown) =>
+        queryBuilder(Promise.resolve(rowsByType[typeOf(condition)!] ?? [])),
     }),
   }));
 }
@@ -42,12 +61,12 @@ function mockPendingQueries() {
   const pending: ((rows: Category[]) => void)[] = [];
   selectMock.mockImplementation(() => ({
     from: () => ({
-      where: () => ({
-        orderBy: () =>
+      where: () =>
+        queryBuilder(
           new Promise<Category[]>((resolve) => {
             pending.push(resolve);
           }),
-      }),
+        ),
     }),
   }));
   return pending;

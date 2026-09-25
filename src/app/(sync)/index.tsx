@@ -10,12 +10,15 @@ import { useFocusStore } from "@/store/focus";
 import { CatalogType } from "@/store/sync";
 import { useSyncQueue } from "@/store/syncQueue";
 import { MEDIA, MEDIA_ENTRIES } from "@/types/mediaType";
-import { FlashList } from "@shopify/flash-list";
-import { useCallback, useState } from "react";
+import { FlashList, FlashListRef } from "@shopify/flash-list";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   findNodeHandle,
   Platform,
+  Pressable,
   StyleSheet,
+  Switch,
+  Text,
   TVFocusGuideView,
   View,
 } from "react-native";
@@ -27,9 +30,12 @@ export default function SyncCategories() {
   const setTabsHasFocus = useFocusStore((s) => s.setTabsHasFocus);
 
   const tabsHandle = useFocusStore((s) => s.tabsHandle);
+  const tabsFocusHandle = tabsHandle ? findNodeHandle(tabsHandle) : undefined;
 
   const taskSyncing = useSyncQueue((s) => s.running);
-  const { data, setHidden } = useCategories(type);
+  const { data, setHidden, viewSync, toggleSwitch } = useCategories(type);
+
+  const resetKey = `${type}:${toggleSwitch}`;
 
   const { onRowPress, onRowLongPress, syncCategories } = useCategorySync(
     type,
@@ -40,12 +46,34 @@ export default function SyncCategories() {
 
   const onTabsRef = useCallback(
     (node: View | null) => {
-      setTabsHandle(node ? findNodeHandle(node) : null);
+      setTabsHandle(node ?? null);
     },
     [setTabsHandle],
   );
 
   useBackToTabs();
+  const flashListRef = useRef<
+    FlashListRef<{
+      id: number;
+      categoryId: number;
+      name: string;
+      type: "live" | "movie" | "series";
+      hidden: boolean;
+    }>
+  >(null);
+
+  useEffect(() => {
+    if (!data?.length) return;
+
+    const timeout = setTimeout(() => {
+      flashListRef.current?.scrollToOffset({
+        offset: 0,
+        animated: false,
+      });
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [resetKey]);
 
   return (
     <>
@@ -54,7 +82,13 @@ export default function SyncCategories() {
         edges={["bottom", "left", "right"]}
         style={styles.container}
       >
-        <View style={styles.tabs} ref={onTabsRef}>
+        <Container
+          style={styles.tabs}
+          ref={onTabsRef}
+          {...(Platform.isTV && {
+            autoFocus: true,
+          })}
+        >
           {MEDIA_ENTRIES.map(([tabKey, tabValue]) => {
             return (
               <TabItem
@@ -69,7 +103,7 @@ export default function SyncCategories() {
               />
             );
           })}
-        </View>
+        </Container>
         <Container
           style={styles.main}
           {...(Platform.isTV && {
@@ -78,16 +112,45 @@ export default function SyncCategories() {
             trapFocusRight: true,
           })}
         >
-          <View style={styles.header}>
+          <Container
+            style={styles.header}
+            {...(Platform.isTV && {
+              autoFocus: true,
+            })}
+          >
+            <Container
+              style={styles.switchContainer}
+              {...(Platform.isTV && {
+                autoFocus: true,
+              })}
+            >
+              <Pressable
+                onPress={toggleSwitch}
+                style={({ focused }) => [
+                  styles.switchWrap,
+                  Platform.isTV && focused && styles.switchWrapFocused,
+                ]}
+              >
+                <Text style={styles.switchLabel}>Only Sync</Text>
+                <Switch
+                  value={viewSync}
+                  onValueChange={toggleSwitch}
+                  pointerEvents="none"
+                />
+              </Pressable>
+            </Container>
+
             <SyncButton
               label="Sync"
               onPress={syncCategories}
               syncing={taskSyncing.has(`${type}:cats`)}
               preferFocus
-              nextFocusUp={tabsHandle ?? undefined}
+              nextFocusUp={tabsFocusHandle ?? undefined}
             />
-          </View>
+          </Container>
+
           <FlashList
+            ref={flashListRef}
             data={data}
             keyExtractor={(item) => String(item.categoryId)}
             renderItem={({ item, index }) => (
@@ -96,13 +159,16 @@ export default function SyncCategories() {
                 onPress={onRowPress}
                 onLongPress={onRowLongPress}
                 nextFocusUp={
-                  index === 0 ? (tabsHandle ?? undefined) : undefined
+                  index === 0 ? (tabsFocusHandle ?? undefined) : undefined
                 }
               />
             )}
             maxItemsInRecyclePool={10}
             ListEmptyComponent={<NoData />}
             onEndReachedThreshold={0.5}
+            maintainVisibleContentPosition={{
+              disabled: true,
+            }}
           />
         </Container>
       </SafeAreaView>
@@ -117,7 +183,7 @@ const styles = StyleSheet.create({
   header: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
   },
   container: {
     padding: 8,
@@ -136,4 +202,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
+  switchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  switchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  switchWrapFocused: {
+    borderColor: "#4f9dff",
+  },
+  switchLabel: { fontSize: 15, color: "#1a1a18" },
 });

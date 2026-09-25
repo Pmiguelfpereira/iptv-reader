@@ -1,5 +1,14 @@
+import AntDesign from "@react-native-vector-icons/ant-design/static";
 import { Image } from "expo-image";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  findNodeHandle,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export type MediaItem = {
   id: string;
@@ -13,15 +22,23 @@ export default function MediaCard({
   width,
   onPress,
   nextFocusUp,
+  isLast = false,
 }: {
   item: MediaItem;
   width: number;
   hasInitialFocus?: boolean;
   onPress: () => void;
   nextFocusUp?: number;
+  isLast?: boolean;
 }) {
+  const [selfHandle, setSelfHandle] = useState<number | null>(null);
+  const [hasError, setHasError] = useState(false);
+
   return (
     <Pressable
+      ref={(node) => {
+        if (node) setSelfHandle(findNodeHandle(node));
+      }}
       style={({ focused }) => [
         { width },
         styles.main,
@@ -29,25 +46,41 @@ export default function MediaCard({
       ]}
       onPress={onPress}
       {...(Platform.isTV && { nextFocusUp })}
+      {...(Platform.isTV && { nextFocusDown: isLast ? selfHandle : undefined })}
+      nextFocusLeft={nextFocusUp}
     >
       {({ focused }) => (
         <>
           <View>
-            {item.poster ? (
+            {item.poster && !hasError ? (
               <Image
                 source={{ uri: item.poster }}
-                style={[styles.poster, focused && styles.imageFocused]}
+                style={[
+                  styles.poster,
+                  Platform.isTV && focused && styles.imageFocused,
+                ]}
                 contentFit="cover"
                 recyclingKey={item.id}
                 cachePolicy="disk"
                 transition={0}
+                onError={() => setHasError(true)}
               />
             ) : (
-              <View style={[styles.poster, focused && styles.imageFocused]} />
+              <View
+                style={[
+                  styles.errorPoster,
+                  Platform.isTV && focused && styles.imageFocused,
+                ]}
+              >
+                <AntDesign name="picture" size={40} color="#6E6E6E" />
+              </View>
             )}
           </View>
           <Text
-            style={[styles.title, focused && styles.titleFocused]}
+            style={[
+              styles.title,
+              Platform.isTV && focused && styles.titleFocused,
+            ]}
             numberOfLines={2}
           >
             {item.title}
@@ -60,6 +93,14 @@ export default function MediaCard({
 const styles = StyleSheet.create({
   main: {
     padding: 8,
+  },
+  errorPoster: {
+    width: "100%",
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+    backgroundColor: "#1e1e1e",
+    alignItems: "center",
+    justifyContent: "center",
   },
   poster: {
     width: "100%",

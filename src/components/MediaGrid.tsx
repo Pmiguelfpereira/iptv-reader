@@ -1,8 +1,8 @@
 import { useFocusStore } from "@/store/focus";
-import { useCallback, useState } from "react";
+import { FlashList, FlashListRef } from "@shopify/flash-list";
+import { useCallback, useEffect, useRef } from "react";
 import {
-  FlatList,
-  LayoutChangeEvent,
+  findNodeHandle,
   Platform,
   StyleSheet,
   TVFocusGuideView,
@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import MediaCard, { MediaItem } from "./MediaCard";
-import { FlashList } from "@shopify/flash-list";
 
 const GAP = 20;
 const H_PADDING = 8;
@@ -20,13 +19,19 @@ export default function MediaGrid({
   data,
   onPressItem,
   onEndReached,
+  loading = false,
+  resetKey,
 }: {
   data: MediaItem[];
   onPressItem?: (item: MediaItem) => void;
   onEndReached?: () => void;
+  loading?: boolean;
+  resetKey: string;
 }) {
   const { width } = useWindowDimensions();
   const tabsHandle = useFocusStore((s) => s.tabsHandle);
+  const tabsFocusHandle = tabsHandle ? findNodeHandle(tabsHandle) : undefined;
+  const listRef = useRef<FlashListRef<MediaItem>>(null);
 
   // Nº de colunas: 6 fixo na TV; no telemóvel, quantas cabem pela largura (mín. 2)
   const numColumns = Platform.isTV
@@ -38,19 +43,38 @@ export default function MediaGrid({
   const itemWidth =
     (width - H_PADDING * 2 - GAP * (numColumns - 1)) / numColumns;
 
+  const lastItemIndex = data.length - 1;
+
   const renderItem = useCallback(
     ({ item, index }: { item: MediaItem; index: number }) => (
       <MediaCard
         item={item}
         width={itemWidth}
         onPress={() => onPressItem?.(item)}
-        nextFocusUp={index < numColumns ? (tabsHandle ?? undefined) : undefined}
+        nextFocusUp={
+          index < numColumns ? (tabsFocusHandle ?? undefined) : undefined
+        }
+        isLast={index === lastItemIndex}
       />
     ),
     [itemWidth, numColumns, onPressItem, tabsHandle],
   );
+  useEffect(() => {
+    if (!data?.length) return;
+
+    const timeout = setTimeout(() => {
+      listRef.current?.scrollToOffset({
+        offset: 0,
+        animated: false,
+      });
+    }, 0);
+
+    return () => clearTimeout(timeout);
+  }, [resetKey]);
+
   const list = (
     <FlashList
+      ref={listRef}
       key={numColumns}
       data={data}
       keyExtractor={(item) => item.id}
@@ -58,11 +82,12 @@ export default function MediaGrid({
       contentContainerStyle={styles.content}
       renderItem={renderItem}
       onEndReached={onEndReached}
-      onEndReachedThreshold={0.5}
+      onEndReachedThreshold={0.8}
+      drawDistance={2000}
     />
   );
   return Platform.isTV ? (
-    <TVFocusGuideView style={{ flex: 1 }} autoFocus>
+    <TVFocusGuideView style={{ flex: 1 }} trapFocusDown={loading}>
       {list}
     </TVFocusGuideView>
   ) : (

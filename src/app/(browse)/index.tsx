@@ -7,17 +7,20 @@ import { useBackToTabs } from "@/hook/useBackToTabs";
 import { useCategoryOptions } from "@/hook/useCategoryOptions";
 import { useContentPaged } from "@/hook/useContent";
 import { useDebounced } from "@/hook/useDebouncedt";
+import { useExternalPlayer } from "@/hook/useExternalPlayer";
 import { usePlayInVlc } from "@/hook/usePlayInVlc";
 import { useAccountStore } from "@/store/account";
 import { useFocusStore } from "@/store/focus";
 import { CatalogType } from "@/store/sync";
 import { MEDIA_ENTRIES } from "@/types/mediaType";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  findNodeHandle,
+  Keyboard,
+  Platform,
   StyleSheet,
+  TVFocusGuideView,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +31,10 @@ export default function LiveVODSeriesScreen() {
   const [searching, setSearching] = useState(false);
   const [searchText, setSearchText] = useState("");
   const debouncedSearch = useDebounced(searchText, 350);
+  const searchIconRef = useRef<View>(null);
+  const client = useAccountStore((s) => s.client);
+  const externalPlayer = useExternalPlayer();
+  const playInVlc = usePlayInVlc();
 
   const setTabsHandle = useFocusStore((s) => s.setTabsHandle);
   const setTabsHasFocus = useFocusStore((s) => s.setTabsHasFocus);
@@ -42,20 +49,23 @@ export default function LiveVODSeriesScreen() {
     searching ? debouncedSearch : undefined,
   );
 
-  const client = useAccountStore((s) => s.client);
-  const playInVlc = usePlayInVlc();
+  const resetKey = `${type}:${category}:${searchText ?? ""}`;
 
   const onTabsRef = useCallback(
     (node: View | null) => {
-      setTabsHandle(node ? findNodeHandle(node) : null);
+      setTabsHandle(node ?? null);
     },
     [setTabsHandle],
   );
-
   const onPressItem = useCallback(
     (item: MediaItem) => {
       if (type === "series") {
         router.navigate({ pathname: "/serie/[id]", params: { id: item.id } });
+        return;
+      }
+
+      if (!externalPlayer) {
+        router.push(`/player/${type}/${item.id}`);
         return;
       }
 
@@ -70,17 +80,25 @@ export default function LiveVODSeriesScreen() {
     },
     [type, client, playInVlc],
   );
+
   const openSearch = () => {
     setSearching(true);
     setSearchText("");
   };
+
   const closeSearch = () => {
+    Keyboard.dismiss();
     setSearching(false);
     setSearchText("");
+    setTimeout(() => {
+      searchIconRef.current?.focus?.();
+    }, 50);
   };
   const activeTab = MEDIA_ENTRIES.find((m) => m[0] === type);
 
   useBackToTabs();
+
+  const Container = Platform.isTV ? TVFocusGuideView : View;
 
   return (
     <>
@@ -89,7 +107,13 @@ export default function LiveVODSeriesScreen() {
         style={styles.container}
         edges={["bottom", "left", "right"]}
       >
-        <View style={styles.tabs} ref={onTabsRef}>
+        <Container
+          style={styles.tabs}
+          ref={onTabsRef}
+          {...(Platform.isTV && {
+            autoFocus: true,
+          })}
+        >
           {MEDIA_ENTRIES.map(([tabKey, tabValue]) => {
             return (
               <TabItem
@@ -106,7 +130,7 @@ export default function LiveVODSeriesScreen() {
               />
             );
           })}
-        </View>
+        </Container>
         {searching ? (
           <SearchBar
             value={searchText}
@@ -128,6 +152,8 @@ export default function LiveVODSeriesScreen() {
             onEndReached={loadMore}
             useList={!activeTab?.[1].hasImage}
             useSelect={!searching}
+            loading={loading}
+            resetKey={resetKey}
           />
         )}
       </SafeAreaView>
